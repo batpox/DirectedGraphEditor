@@ -1,0 +1,51 @@
+﻿<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="clr-namespace:DirectedGraphEditor.ViewModels"
+    mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+    x:Class="DirectedGraphEditor.Views.GraphEditorView"
+    x:DataType="vm:MainViewModel">
+
+
+  <Canvas x:Name="GraphCanvas"
+        Background="#222"
+        Width="1000"
+        Height="800"
+        PointerPressed="OnPointerPressed"
+        PointerReleased="OnPointerReleased"
+        PointerMoved="OnPointerMoved">
+    
+    <ItemsControl ItemsSource="{Binding NodesVm}"  >
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <Canvas />
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate>
+          <!-- x:DataType="vm:GraphNodeViewModel"> -->
+          
+          <Border Width="120" Height="60"
+                    Background="#444"
+                    BorderBrush="White"
+                    BorderThickness="1"
+                    Canvas.Left="{Binding X}"
+                    Canvas.Top="{Binding Y}"
+                    PointerPressed="OnNodeBorderPressed">
+            <TextBlock Text="{Binding Node.Name}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Foreground="White"/>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+
+  </Canvas>
+
+</UserControl>
+
+
