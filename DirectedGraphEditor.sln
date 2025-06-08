@@ -9,6 +9,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectedGraphEditor.Desktop
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectedGraphCore", "DirectedGraphCore\DirectedGraphCore.csproj", "{8B252430-86CD-4234-8D2A-EA4C384A89F8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectedGraphCore.Tests", "DirectedGraphCore.Tests\DirectedGraphCore.Tests.csproj", "{87905166-2A60-4834-B1E0-EBF0712F58C6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Data", "Data", "{18397582-AE84-4593-81EF-5EF72D0A02BA}"
+	ProjectSection(SolutionItems) = preProject
+		TestFile1.dgml = TestFile1.dgml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +34,10 @@ Global
 		{8B252430-86CD-4234-8D2A-EA4C384A89F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8B252430-86CD-4234-8D2A-EA4C384A89F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8B252430-86CD-4234-8D2A-EA4C384A89F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{87905166-2A60-4834-B1E0-EBF0712F58C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{87905166-2A60-4834-B1E0-EBF0712F58C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{87905166-2A60-4834-B1E0-EBF0712F58C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{87905166-2A60-4834-B1E0-EBF0712F58C6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

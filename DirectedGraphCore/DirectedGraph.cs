@@ -1,4 +1,8 @@
-﻿namespace DirectedGraphCore;
+﻿using System.Xml.Serialization;
+using System.Collections.Generic;
+
+namespace DirectedGraphCore;
+
 
 
 public class GraphNode
@@ -53,22 +57,41 @@ public class GraphConnection
 
 public class GraphModel
 {
-    public List<GraphNode> Nodes { get; } = new();
-    public List<GraphConnection> Connections { get; } = new();
+    public Dictionary<string, Node> Nodes { get; } = new();
+    public List<Edge> Edges { get; } = new();
 
-    public void AddNode(GraphNode node) => Nodes.Add(node);
-
-    public void Connect(GraphSlot from, GraphSlot to)
+    public void AddNode(string id, string label = null)
     {
-        if (Connections.Any(c => c.From == from && c.To == to)) return;
-        Connections.Add(new GraphConnection(from, to));
+        if (!Nodes.ContainsKey(id))
+            Nodes[id] = new Node { Id = id, Label = label ?? id };
     }
 
-    public void Disconnect(GraphConnection connection) => Connections.Remove(connection);
+    public void AddEdge(string sourceId, string targetId)
+    {
+        AddNode(sourceId);
+        AddNode(targetId);
+        Edges.Add(new Edge { SourceId = sourceId, TargetId = targetId });
+    }
 
-    public IEnumerable<GraphConnection> GetConnectionsFrom(GraphNode node) =>
-        Connections.Where(c => c.From.Owner == node);
+    public void SaveToFile(string filePath)
+    {
+        DgmlSerializer.Save(this, filePath);
+    }
 
-    public IEnumerable<GraphConnection> GetConnectionsTo(GraphNode node) =>
-        Connections.Where(c => c.To.Owner == node);
+    public static GraphModel LoadFromFile(string filePath)
+    {
+        return DgmlSerializer.Load(filePath);
+    }
+}
+
+public class Node
+{
+    public string Id { get; set; }
+    public string Label { get; set; }
+}
+
+public class Edge
+{
+    public string SourceId { get; set; }
+    public string TargetId { get; set; }
 }

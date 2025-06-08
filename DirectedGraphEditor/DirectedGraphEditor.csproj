@@ -27,4 +27,9 @@
   <ItemGroup>
     <ProjectReference Include="..\DirectedGraphCore\DirectedGraphCore.csproj" />
   </ItemGroup>
+
+
+  <ItemGroup>
+    <Folder Include="Assets\Icons\" />
+  </ItemGroup>
 </Project>

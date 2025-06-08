@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<DirectedGraph Title="Example Graph" xmlns="http://schemas.microsoft.com/vs/2009/dgml">
+  <Nodes>
+    <Node Id="A" Label="Node A" />
+    <Node Id="B" Label="Node B" />
+    <Node Id="C" Label="Node C" />
+    <Node Id="D" Label="Node D" />
+    <Node Id="E" Label="Node E" />
+    <Node Id="F" Label="Node F" />
+  </Nodes>
+  <Links>
+    <Link Source="A" Target="B" />
+    <Link Source="A" Target="C" />
+    <Link Source="B" Target="D" />
+    <Link Source="C" Target="D" />
+    <Link Source="D" Target="E" />
+    <Link Source="E" Target="F" />
+    <Link Source="F" Target="A" />
+    <!-- cycle -->
+    <Link Source="B" Target="E" />
+    <Link Source="C" Target="F" />
+    <Link Source="D" Target="A" />
+    <!-- back edge -->
+    <Link Source="F" Target="C" />
+    <Link Source="E" Target="B" />
+  </Links>
+</DirectedGraph>
