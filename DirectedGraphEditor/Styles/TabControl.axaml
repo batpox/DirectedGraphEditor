@@ -1,0 +1,39 @@
+﻿<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Design.PreviewWith>
+
+        <TabControl Width="400"
+                    Height="400">
+            <TabItem Header="Header 1">
+                <Button Content="A" />
+            </TabItem>
+            <TabItem Header="Header 2">
+                <Button Content="A" />
+            </TabItem>
+            <TabItem Header="Header 3">
+                <Button Content="A" />
+            </TabItem>
+        </TabControl>
+
+    </Design.PreviewWith>
+
+    <Style Selector="TabControl">
+        <Setter Property="Margin"
+                Value="0" />
+        <Setter Property="Padding"
+                Value="0" />
+    </Style>
+
+    <Style Selector="TabItem">
+        <Setter Property="Padding"
+                Value="0,0,12,0" />
+        <Setter Property="MinHeight"
+                Value="0" />
+    </Style>
+
+    <Style Selector="TabItem > Border > Panel > ContentPresenter">
+        <Setter Property="Margin"
+                Value="0,0,0,10" />
+    </Style>
+
+</Styles>

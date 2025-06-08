@@ -1,0 +1,65 @@
+﻿<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Design.PreviewWith></Design.PreviewWith>
+
+    <Style Selector="Button">
+        <Setter Property="MinWidth"
+                Value="80" />
+        <Setter Property="HorizontalContentAlignment"
+                Value="Center" />
+        <Setter Property="MinHeight"
+                Value="26" />
+        <Setter Property="VerticalContentAlignment"
+                Value="Center" />
+        <Setter Property="BorderThickness"
+                Value="0" />
+    </Style>
+
+    <Style Selector="ToggleButton">
+        <Setter Property="BorderThickness"
+                Value="0" />
+    </Style>
+
+    <!-- Image button -->
+    <Style Selector="Button.image_button Image">
+        <Setter Property="Width"
+                Value="16" />
+        <Setter Property="Height"
+                Value="16" />
+        <Setter Property="MinWidth"
+                Value="80" />
+    </Style>
+
+    <Style Selector="Button.image_button > StackPanel">
+        <Setter Property="Orientation"
+                Value="Vertical" />
+        <Setter Property="HorizontalAlignment"
+                Value="Center" />
+    </Style>
+
+    <Style Selector="Button.image_button_horizontal > StackPanel">
+        <Setter Property="Orientation"
+                Value="Horizontal" />
+        <Setter Property="VerticalAlignment"
+                Value="Center" />
+    </Style>
+
+    <Style Selector="Button.image_button TextBlock">
+        <Setter Property="Margin"
+                Value="10,5,10,0" />
+        <Setter Property="HorizontalAlignment"
+                Value="Center" />
+    </Style>
+
+    <Style Selector="Button.image_button_horizontal TextBlock">
+        <Setter Property="Margin"
+                Value="5,0,5,0" />
+        <Setter Property="HorizontalAlignment"
+                Value="Center" />
+    </Style>
+
+    <Style Selector="Button:pressed, RepeatButton:pressed, ToggleButton:pressed">
+        <Setter Property="RenderTransform"
+                Value="scale(1.0)" />
+    </Style>
+</Styles>
