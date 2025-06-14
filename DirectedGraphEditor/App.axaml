@@ -60,5 +60,26 @@
       <StyleInclude Source="/Styles/Components.axaml" />
       <StyleInclude Source="/Styles/Sidebar.axaml" />
 
-    </Application.Styles>
+    <StyleInclude Source="/Controls/GroupBox.axaml" />
+    <StyleInclude Source="/Controls/Overlay/Overlay.axaml" />
+    <StyleInclude Source="/Controls/GroupBox.axaml" />
+
+
+    <Style Selector="DataGridCell">
+      <Setter Property="FontSize"
+              Value="{DynamicResource ControlContentThemeFontSize}" />
+    </Style>
+
+    <Style Selector="ToolTip">
+      <Setter Property="MaxWidth"
+              Value="999999" />
+    </Style>
+
+
+    <Style Selector="Window">
+      <Setter Property="Background"
+              Value="#212121" />
+    </Style>
+
+  </Application.Styles>
 </Application>

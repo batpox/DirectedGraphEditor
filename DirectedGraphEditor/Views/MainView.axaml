@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:DirectedGraphEditor.ViewModels"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             xmlns:views="clr-namespace:DirectedGraphEditor.Views"
              x:Class="DirectedGraphEditor.Views.MainView"
              x:DataType="vm:MainViewModel">
   <Design.DataContext>
@@ -12,5 +13,41 @@
     <vm:MainViewModel />
   </Design.DataContext>
 
+  <UserControl.Styles>
+    <Style Selector="TabItem">
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="FontSize" Value="14"/>
+    </Style>
+
+    <!-- TextBlock fallback for anything inside -->
+    <Style Selector="TextBlock">
+      <Setter Property="Foreground" Value="White"/>
+    </Style>
+  </UserControl.Styles>
+
+  <!--<Border Background="#222" BorderBrush="#444" BorderThickness="1"> -->
+  <Grid RowDefinitions="*,Auto" >
+    <!-- Sidebar with vertical tabs -->
+    <TabControl x:Name="Sidebar" Grid.Row="0" Classes="sidebar"
+            TabStripPlacement="Left"
+                Background="#222"
+                Foreground="White"
+                BorderBrush="#444"
+                BorderThickness="1"
+                SelectedIndex="{Binding SelectedTabIndex}">
+      
+      <TabControl.Items>
+        <TabItem Header="Graph Editor">
+          <Border Background="#2A2A2A" BorderBrush="#444" BorderThickness="1" Padding="8">
+            <views:GraphEditorView />
+          </Border>
+        </TabItem>
+        <!-- More tabs to come -->
+      </TabControl.Items>
+    </TabControl>
+  </Grid>
+  <!-- </Border> -->
+  <!--
   <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+  -->
 </UserControl>

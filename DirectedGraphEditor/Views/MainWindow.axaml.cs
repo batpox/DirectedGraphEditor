@@ -9,13 +9,13 @@ namespace DirectedGraphEditor.Views
         {
             InitializeComponent();
 
-            // Explicitly set the DataContext
-            var view = new GraphEditorView
-            {
-                DataContext = new MainViewModel()
-            };
+            //// Explicitly set the DataContext
+            //var view = new GraphEditorView
+            //{
+                DataContext = new MainViewModel();
+            //};
 
-            Content = view;
+            //Content = view;
         }
     }
 }
