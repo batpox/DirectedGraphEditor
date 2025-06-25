@@ -30,6 +30,9 @@ public partial class EditorPageViewModel : BasePageViewModel
 
     public bool CreateNodeData()
     {
+        if (NodesVm.Count > 0)
+            return false;
+
         // Sample nodes
         // Create node A with inputs and outputs
         var nodeA = new GraphNode("nodeA", "Alpha");

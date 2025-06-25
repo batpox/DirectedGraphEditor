@@ -29,6 +29,6 @@ public sealed class GraphEdgeViewModel : ObservableObject
         }
     }
 
-    public Point StartPoint => new(Source.X + 60, Source.Y + 30); // offset to center right
-    public Point EndPoint => new(Target.X + 0, Target.Y + 30); // offset to center left
+    public Point StartPoint => new(Source.X + 116, Source.Y + 30); // offset to center right
+    public Point EndPoint => new(Target.X + -4, Target.Y + 8); // offset to center left
 }
