@@ -2,6 +2,6 @@
 
 namespace DirectedGraphEditor.ViewModels;
 
-public abstract class ViewModelBase : ObservableObject
+public abstract class xxViewModelBase : ObservableObject
 {
 }

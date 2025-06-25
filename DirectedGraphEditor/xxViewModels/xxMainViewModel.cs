@@ -5,7 +5,7 @@ using System.Xml.Linq;
 
 namespace DirectedGraphEditor.ViewModels;
 
-public partial class MainViewModel : ObservableObject
+public partial class xxMainViewModel : ObservableObject
 {
     [ObservableProperty]
     private string _greeting = "Welcome to Avalonia!";
@@ -14,11 +14,11 @@ public partial class MainViewModel : ObservableObject
     private int selectedTabIndex = 0;
 
 
-    public ObservableCollection<GraphNodeViewModel> NodesVm { get; } = new();
+    public ObservableCollection<xxGraphNodeViewModel> NodesVm { get; } = new();
 
     public GraphModel Graph { get; } = new();
 
-    public MainViewModel()
+    public xxMainViewModel()
     {
         // Sample nodes
         // Create node A with inputs and outputs
@@ -34,8 +34,8 @@ public partial class MainViewModel : ObservableObject
         nodeB.Outputs.Add(new GraphSlot("Out1", GraphSlotDirection.Output, nodeB));
 
         // Create ViewModels with positions
-        var vmA = new GraphNodeViewModel(nodeA, 100, 100);
-        var vmB = new GraphNodeViewModel(nodeB, 300, 200);
+        var vmA = new xxGraphNodeViewModel(nodeA, 100, 100);
+        var vmB = new xxGraphNodeViewModel(nodeB, 300, 200);
 
         // Add to collection
         NodesVm.Add(vmA);

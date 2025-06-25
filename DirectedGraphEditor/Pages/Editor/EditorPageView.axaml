@@ -1,0 +1,68 @@
+﻿<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:editor="clr-namespace:DirectedGraphEditor.Pages.Editor"
+    xmlns:nodes="clr-namespace:DirectedGraphEditor.Controls.GraphNodeControl"
+    mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+    x:Class="DirectedGraphEditor.Pages.Editor.EditorPageView"
+    x:DataType="editor:EditorPageViewModel">
+
+  <Design.DataContext>
+    <editor:EditorPageViewModel />
+  </Design.DataContext>
+
+  <UserControl.Styles>
+
+    <Style Selector="TextBlock.version_text">
+      <Setter Property="Margin"
+              Value="10,0,10,0" />
+    </Style>
+
+    <Style Selector="Label.version_text">
+      <Setter Property="Margin"
+              Value="10,0,10,0" />
+    </Style>
+
+    <Style Selector="Label.h1 AccessText">
+      <Setter Property="FontSize"
+              Value="14" />
+      <Setter Property="FontWeight"
+              Value="Bold" />
+    </Style>
+
+    <Style Selector="Label.no_update_available">
+      <Setter Property="Foreground"
+              Value="Green" />
+    </Style>
+
+    <Style Selector="Label.update_available">
+      <Setter Property="Foreground"
+              Value="Orange" />
+    </Style>
+  </UserControl.Styles>
+
+
+  <Canvas x:Name="GraphCanvas"
+        Background="#222"
+        Width="1000"
+        Height="800"
+        PointerPressed="OnCanvasPointerPressed"
+        PointerMoved="OnCanvasPointerMoved"
+        PointerReleased="OnCanvasPointerReleased"
+        Loaded="OnLoaded">
+
+
+    <!-- Rubber-banding line 
+    <Line x:Name="TempLine"
+          IsVisible="False"
+          Stroke="Orange"
+          StrokeThickness="2" />
+          -->
+
+  </Canvas>
+
+</UserControl>
+
+

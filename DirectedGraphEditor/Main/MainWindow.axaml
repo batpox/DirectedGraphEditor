@@ -1,0 +1,10 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:main="clr-namespace:DirectedGraphEditor.Main"
+        Design.Width="800"
+        Design.Height="600"
+        Icon="/Assets/Icons/App.ico"
+        x:Class="DirectedGraphEditor.Main.MainWindow"
+        Title="DirectedGraphEditor">
+    <main:MainView />
+</Window>

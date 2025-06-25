@@ -4,7 +4,10 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using DirectedGraphCore;
 using System.Collections.Generic;
 
-public partial class GraphNodeViewModel : ViewModelBase
+/// <summary>
+/// This was an experimental stub. Look now under Pages.Editor
+/// </summary>
+public partial class xxGraphNodeViewModel : xxViewModelBase
 {
     public GraphNode Node { get; }
 
@@ -14,7 +17,7 @@ public partial class GraphNodeViewModel : ViewModelBase
     [ObservableProperty]
     private double y;
 
-    public GraphNodeViewModel(GraphNode node, double initialX, double initialY)
+    public xxGraphNodeViewModel(GraphNode node, double initialX, double initialY)
     {
         Node = node;
         x = initialX;

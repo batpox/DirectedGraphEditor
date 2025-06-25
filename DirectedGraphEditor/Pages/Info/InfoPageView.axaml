@@ -1,0 +1,210 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:info="clr-namespace:DirectedGraphEditor.Pages.Info"
+             Design.Width="800"
+             Design.Height="450"
+             Margin="10"
+             x:Class="DirectedGraphEditor.Pages.Info.InfoPageView">
+    <Design.DataContext>
+        <info:InfoPageViewModel />
+    </Design.DataContext>
+
+    <UserControl.Styles>
+
+        <Style Selector="TextBlock.version_text">
+            <Setter Property="Margin"
+                    Value="10,0,10,0" />
+        </Style>
+        
+        <Style Selector="Label.version_text">
+            <Setter Property="Margin"
+                    Value="10,0,10,0" />
+        </Style>
+
+        <Style Selector="Label.h1 AccessText">
+            <Setter Property="FontSize"
+                    Value="14" />
+            <Setter Property="FontWeight"
+                    Value="Bold" />
+        </Style>
+
+        <Style Selector="Label.no_update_available">
+            <Setter Property="Foreground"
+                    Value="Green" />
+        </Style>
+
+        <Style Selector="Label.update_available">
+            <Setter Property="Foreground"
+                    Value="Orange" />
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer>
+        <StackPanel>
+
+            <StackPanel Margin="0,10,0,0"
+                        HorizontalAlignment="Left">
+
+                <!-- The App Title -->
+                <StackPanel Orientation="Vertical"
+                            HorizontalAlignment="Center">
+                    <Image Source="/Assets/App128.png"
+                           Width="82"
+                           HorizontalAlignment="Center"
+                           Height="82" />
+                    <TextBlock FontSize="42"
+                               Margin="0,20,0,0"
+                               Text="Directed Graph Editor" />
+                </StackPanel>
+
+                <!-- The buttons -->
+                <StackPanel Orientation="Horizontal"
+                            Margin="0,20,0,0">
+                    <StackPanel.Styles>
+                        <Style Selector="Button">
+                            <Setter Property="Margin"
+                                    Value="0,0,10,0" />
+                            <Setter Property="Width"
+                                    Value="125" />
+                        </Style>
+                        <Style Selector="Button TextBlock">
+                            <Setter Property="HorizontalAlignment"
+                                    Value="Center" />
+                            <Setter Property="Margin"
+                                    Value="0,5,0,0" />
+                        </Style>
+                    </StackPanel.Styles>
+
+                    <Button Click="OnOpenHomepage">
+                        <StackPanel>
+                            <PathIcon Data="{StaticResource home_regular}" />
+                            <TextBlock Text="Homepage" />
+                        </StackPanel>
+                    </Button>
+                    <Button Click="OnReportBug">
+                        <StackPanel>
+                            <PathIcon Data="{StaticResource bug_regular}" />
+                            <TextBlock Text="Report Bug" />
+                        </StackPanel>
+                    </Button>
+                    <Button Click="OnRequestFeature">
+                        <StackPanel>
+                            <PathIcon Data="{StaticResource add_square_regular}" />
+                            <TextBlock Text="Request Feature" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <!-- The versions -->
+                <Label Classes="h1"
+                       Margin="0,20,0,0"
+                       Content="Versions" />
+
+                <Grid Margin="10,0,0,0"
+                      ColumnDefinitions="Auto,Auto,Auto"
+                      RowDefinitions="Auto,Auto,Auto,Auto">
+
+                    <Label Classes="value caption"
+                           Grid.Column="0"
+                           Grid.Row="0"
+                           Content="App version" />
+                    <Label Content="{Binding CurrentAppVersion}"
+                           Classes="value version_text code_text"
+                           Grid.Column="1"
+                           Grid.Row="0" />
+
+                    <StackPanel Orientation="Horizontal"
+                                Grid.Column="2"
+                                Grid.Row="0">
+                        <Label Content="Latest version:" />
+                        <Label Classes.no_update_available="{Binding !IsUpdateAvailable}"
+                                   Classes.update_available="{Binding IsUpdateAvailable}"
+                                   Margin="10,0,0,0"
+                                   Cursor="Hand"
+                                   PointerPressed="OnLatestVersionClicked"
+                                   Content="{Binding LatestAppVersion}"
+                                   Classes="value version_text code_text" />
+                    </StackPanel>
+
+                  <!--
+                    <Label Classes="caption value"
+                           Grid.Column="0"
+                           Grid.Row="1"
+                           Content="MQTTnet version" />
+                    <Label Content="{Binding MqttNetVersion}"
+                           Classes="value version_text code_text"
+                           Grid.Row="1"
+                           Grid.Column="1" />
+                           -->
+
+                    <Label Classes="caption value"
+                           Grid.Column="0"
+                           Grid.Row="2"
+                           Content="Avalonia version" />
+                    <Label Content="{Binding AvaloniaVersion}"
+                           Classes="value version_text code_text"
+                           Grid.Row="2"
+                           Grid.Column="1" />
+
+                    <Label Classes="caption value"
+                           Grid.Column="0"
+                           Grid.Row="3"
+                           Content=".NET Framework version" />
+                    <Label Content="{Binding DotNetVersion}"
+                               Classes="value version_text code_text"
+                               Grid.Column="1"
+                               Grid.Row="3" />
+                </Grid>
+
+                <!-- The used libraries -->
+                <Label Classes="h1"
+                       Margin="0,20,0,0"
+                       Content="Used libraries" />
+
+                <StackPanel Orientation="Vertical"
+                            Margin="10,0,0,0">
+                    <TextBlock Text="- Avalonia"
+                               Classes="code_text value" />
+                    <TextBlock Text="- CommunityToolkit.MVVM"
+                               Classes="code_text value" />
+                    <TextBlock Text="- MS DependencyInjector"
+                               Classes="code_text value" />
+                    <TextBlock Text="- Fluent UI System Icons"
+                               Classes="code_text value" />
+                </StackPanel>
+
+                <!-- DG Editor spec -->
+                <Label Classes="h1"
+                       Margin="0,20,0,5"
+                       Content="DirectedGraph Editor Tutorials and References" />
+
+                <StackPanel Margin="10,0,0,0">
+                    <Button Click="OpenUrlFromButtonContent">https://learn.microsoft.com/en-us/visualstudio/modeling/directed-graph-markup-language-dgml-reference?view=vs-2022</Button>
+                </StackPanel>
+
+                <!-- DGML spec -->
+                <Label Classes="h1"
+                       Margin="0,20,0,5"
+                       Content="MS DirectedGraph Specification" />
+
+                <StackPanel Margin="10,0,0,0">
+                    <Button Click="OpenUrlFromButtonContent">https://www.tutorialspoint.com/graph_theory/graph_theory_directed_graphs.htm</Button>
+                  <Button Click="OpenUrlFromButtonContent">https://en.wikipedia.org/wiki/DGML</Button>
+                  <Button Click="OpenUrlFromButtonContent">https://learn.microsoft.com/en-us/visualstudio/modeling/directed-graph-markup-language-dgml-reference?view=vs-2022</Button>
+                </StackPanel>
+
+                <!-- The Licenses -->
+                <Label Classes="h1"
+                       Margin="0,20,0,5"
+                       Content="Licenses" />
+            </StackPanel>
+
+            <TextBlock Margin="10,0,0,0"
+                       Width="640"
+                       HorizontalAlignment="Left"
+                       x:Name="Licenses"
+                       TextWrapping="Wrap" />
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

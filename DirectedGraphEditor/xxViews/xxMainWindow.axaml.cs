@@ -12,7 +12,7 @@ namespace DirectedGraphEditor.Views
             //// Explicitly set the DataContext
             //var view = new GraphEditorView
             //{
-                DataContext = new MainViewModel();
+                DataContext = new xxMainViewModel();
             //};
 
             //Content = view;

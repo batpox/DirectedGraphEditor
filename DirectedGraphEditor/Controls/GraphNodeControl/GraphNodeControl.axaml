@@ -1,0 +1,34 @@
+
+
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="clr-namespace:DirectedGraphEditor.Controls.GraphNodeControl"
+    mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+    x:Class="DirectedGraphEditor.Controls.GraphNodeControl.GraphNodeControl"
+    x:DataType="vm:GraphNodeViewModel">
+
+    <Border Width="120" Height="60"
+              Background="#444"
+              BorderBrush="White"
+              BorderThickness="1"
+              Canvas.Left="{Binding X}"
+              Canvas.Top="{Binding Y}"
+              PointerPressed="OnNodeBorderPressed">
+
+      <StackPanel>
+        
+      <TextBlock Text="{Binding Node.Name}"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center"
+                  Foreground="White"/>
+      </StackPanel>
+
+    </Border>
+
+</UserControl>
+
+
+

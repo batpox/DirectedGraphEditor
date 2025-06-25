@@ -1,0 +1,175 @@
+<UserControl x:Class="DirectedGraphEditor.Main.MainView"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:main="clr-namespace:DirectedGraphEditor.Main"
+             xmlns:controls="clr-namespace:DirectedGraphEditor.Controls"
+             Design.Height="450"
+             Design.Width="800"
+             x:DataType="main:MainViewModel">
+    <Design.DataContext>
+        <main:MainViewModel />
+    </Design.DataContext>
+    
+    <UserControl.Styles>
+        <Style Selector="Border.status_bar_connected">
+            <Setter Property="Background"
+                    Value="{StaticResource AppLightGreen}" />
+        </Style>
+
+        <Style Selector="Border.status_bar_not_connected">
+            <Setter Property="Background"
+                    Value="DarkRed" />
+        </Style>
+
+        <Style Selector="Border.update_available">
+            <Setter Property="Background"
+                    Value="Orange" />
+            <Setter Property="TextBlock.Foreground"
+                    Value="Black" />
+        </Style>
+    </UserControl.Styles>
+
+    <!-- The overlay with content like the error box etc. -->
+    <controls:Overlay IsOverlayVisible="{Binding OverlayContent, Converter={x:Static ObjectConverters.IsNotNull}}"
+                      OverlayContent="{Binding OverlayContent}">
+
+        <Grid RowDefinitions="*,Auto">
+
+            <!-- The sidebar -->
+            <TabControl x:Name="Sidebar"
+                        Grid.Row="0"
+                        Classes="sidebar">
+
+                <!-- Connect -->
+                <TabControl.Items>
+                  <!--
+                    <TabItem Content="{CompiledBinding ConnectionPage, Mode=OneTime}"
+                             ToolTip.Tip="Connect">
+                        <TabItem.Header>
+                            <PathIcon Data="{StaticResource globe_regular}" />
+                        </TabItem.Header>
+                    </TabItem>
+                    -->
+
+                    <!-- Publish -->
+                  <!--
+                    <TabItem Content="{CompiledBinding PublishPage, Mode=OneTime}"
+                             ToolTip.Tip="Publish">
+                        <TabItem.Header>
+                            <PathIcon Data="{StaticResource send_regular}" />
+                        </TabItem.Header>
+                    </TabItem>
+                    -->
+
+                    <!-- Subscribe -->
+                  <!--
+                    <TabItem Content="{CompiledBinding SubscriptionsPage, Mode=OneTime}"
+                             ToolTip.Tip="Subscribe">
+                        <TabItem.Header>
+                            <PathIcon Data="{StaticResource add_square_regular}" />
+                        </TabItem.Header>
+                    </TabItem>
+                    -->
+
+                    <!-- Inflight -->
+                  <!--
+                    <TabItem Content="{CompiledBinding InflightPage, Mode=OneTime}"
+                             ToolTip.Tip="Inflight">
+                        <TabItem.Header>
+                            <PathIcon Data="{StaticResource apps_list_regular}" />
+                        </TabItem.Header>
+                    </TabItem>
+                    -->
+
+                    <!-- Topic Explorer -->
+                  <!--
+
+                    <TabItem Content="{CompiledBinding TopicExplorerPage, Mode=OneTime}"
+                             ToolTip.Tip="Topic Explorer">
+                        <TabItem.Header>
+                            <PathIcon Data="{StaticResource branch_regular}" />
+                        </TabItem.Header>
+                    </TabItem>
+                    -->
+
+                    <!-- Editor page -->
+                    <TabItem Content="{CompiledBinding EditorPage, Mode=OneTime}"
+                             ToolTip.Tip="Directed Graph Editor">
+                        <TabItem.Header>
+                            <PathIcon Data="{StaticResource arrow_swap_regular}" />
+                        </TabItem.Header>
+                    </TabItem>
+ 
+                    <!-- Log -->
+                    <TabItem Content="{CompiledBinding LogPage, Mode=OneTime}"
+                             ToolTip.Tip="Log">
+                        <TabItem.Header>
+                            <PathIcon Data="{StaticResource stethoscope_regular}" />
+                        </TabItem.Header>
+                    </TabItem>
+
+                    <!-- Info -->
+                    <TabItem Content="{CompiledBinding InfoPage, Mode=OneTime}"
+                             ToolTip.Tip="Info">
+                        <TabItem.Header>
+                            <PathIcon Data="{StaticResource info_regular}" />
+                        </TabItem.Header>
+                    </TabItem>
+                </TabControl.Items>
+            </TabControl>
+
+            <!-- The status bar -->
+            <Border Classes="status_bar"
+                    Classes.status_bar_connected="{Binding ConnectionPage.IsConnected}"
+                    Classes.status_bar_not_connected="{Binding !ConnectionPage.IsConnected}"
+                    Grid.Row="1">
+
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+                    <!-- The connection status -->
+                    <Border Grid.Column="0">
+                        <StackPanel Orientation="Horizontal">
+                          <!--
+                            <TextBlock Text="Not connected"
+                                       IsVisible="{CompiledBinding !ConnectionPage.IsConnected}" />
+                            <TextBlock Text="Connected"
+                                       IsVisible="{CompiledBinding ConnectionPage.IsConnected}" />
+                                       -->
+
+                          <!--
+                            <TextBlock Margin="10,0,0,0"
+                                       Text="{CompiledBinding ConnectionPage.DisconnectedReason.Reason}" />
+                            <TextBlock Margin="10,0,0,0"
+                                       Text="{CompiledBinding ConnectionPage.DisconnectedReason.AdditionalInformation}" />
+                                       -->
+                        </StackPanel>
+                    </Border>
+
+                    <Separator Grid.Column="2" />
+
+                    <!-- The count of inflight items -->
+                  <!--
+
+                    <Border Grid.Column="3">
+                        <TextBlock Text="{CompiledBinding Counter, StringFormat={}{0} messages received}" />
+                    </Border>
+                    -->
+
+                    <!-- The version string -->
+                    <Border Grid.Column="4"
+                            Classes.update_available="{CompiledBinding InfoPage.IsUpdateAvailable}"
+                            Margin="10,0,-10,0"
+                            Padding="10,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{CompiledBinding InfoPage.CurrentAppVersion, StringFormat={}v{0}, Mode=OneTime}" />
+                            <TextBlock Margin="10,0,0,0"
+                                       Cursor="Hand"
+                                       PointerPressed="OnUpdateAvailableNotificationPressed"
+                                       IsVisible="{CompiledBinding InfoPage.IsUpdateAvailable}"
+                                       Text="Update available" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+    </controls:Overlay>
+</UserControl>

@@ -7,6 +7,8 @@ public abstract class BasePageViewModel : BaseViewModel
 {
     object? _overlayContent;
 
+    public abstract string Name { get; }
+
     public event EventHandler? ActivationRequested;
 
     public object? OverlayContent

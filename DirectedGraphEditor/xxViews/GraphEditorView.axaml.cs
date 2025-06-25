@@ -16,7 +16,7 @@ namespace DirectedGraphEditor.Views;
 
 public partial class GraphEditorView : UserControl
 {
-    private GraphNodeViewModel? draggedNode = null;
+    private xxGraphNodeViewModel? draggedNode = null;
     private Point dragOffset;
 
     private Line? tempConnectionLine;
@@ -29,13 +29,13 @@ public partial class GraphEditorView : UserControl
         InitializeComponent();
         this.AttachedToVisualTree += (_, __) =>
         {
-            if (DataContext is MainViewModel vm)
+            if (DataContext is xxMainViewModel vm)
                 RenderNodes(vm.NodesVm);
         };
     }
 
 
-    private void RenderNodes(IEnumerable<GraphNodeViewModel> nodeViewModels)
+    private void RenderNodes(IEnumerable<xxGraphNodeViewModel> nodeViewModels)
     {
         GraphCanvas.Children.Clear();
         inputSlotEllipses.Clear();
@@ -50,7 +50,7 @@ public partial class GraphEditorView : UserControl
     /// Draw a UI GNVM node (GraphNodeViewModel)
     /// </summary>
     /// <param name="gnvm"></param>
-    private void DrawNode(GraphNodeViewModel gnvm)
+    private void DrawNode(xxGraphNodeViewModel gnvm)
     {
         var nodeContainer = new Canvas
         {
@@ -186,7 +186,7 @@ public partial class GraphEditorView : UserControl
     }
     private void OnNodeBorderPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (sender is Border border && border.DataContext is GraphNodeViewModel nodeVm)
+        if (sender is Border border && border.DataContext is xxGraphNodeViewModel nodeVm)
         {
             Console.WriteLine($"Clicked node: {nodeVm.Name}");
             e.Handled = true;
@@ -195,7 +195,7 @@ public partial class GraphEditorView : UserControl
 
     private void OnNodePointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (sender is Control ctrl && ctrl.DataContext is GraphNodeViewModel graphVm)
+        if (sender is Control ctrl && ctrl.DataContext is xxGraphNodeViewModel graphVm)
         {
             Console.WriteLine($"Clicked node: {graphVm.Node.Name}");
         }
@@ -204,7 +204,7 @@ public partial class GraphEditorView : UserControl
     {
         if (sender is Control control)
         {
-            if (control.DataContext is GraphNodeViewModel node)
+            if (control.DataContext is xxGraphNodeViewModel node)
             {
                 var pointerPos = e.GetPosition(GraphCanvas);
                 dragOffset = new Point((int)(pointerPos.X - node.X), (int)(pointerPos.Y - node.Y));
