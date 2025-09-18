@@ -20,8 +20,8 @@ namespace DirectedGraphCore.Tests;
 
             Assert.Equal(3, loaded.Nodes.Count);
             Assert.Equal(2, loaded.Edges.Count);
-            Assert.Contains(loaded.Edges, e => e.SourceId == "A" && e.TargetId == "B");
-            Assert.Contains(loaded.Edges, e => e.SourceId == "B" && e.TargetId == "C");
+            Assert.Contains(loaded.Edges, e => e.SourceNodeId == "A" && e.TargetNodeId == "B");
+            Assert.Contains(loaded.Edges, e => e.SourceNodeId == "B" && e.TargetNodeId == "C");
         }
     }
 

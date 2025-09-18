@@ -7,28 +7,51 @@ namespace DirectedGraphEditor.Pages.Editor;
 
 public sealed class GraphEdgeViewModel : ObservableObject
 {
-    public GraphNodeViewModel Source { get; }
-    public GraphNodeViewModel Target { get; }
+    public GraphNodeViewModel SourceNode { get; }
+    public GraphNodeViewModel TargetNode { get; }
+    public int SourceOutputIndex { get; }
+    public int TargetInputIndex { get; }
 
-    public GraphEdgeViewModel(GraphNodeViewModel source, GraphNodeViewModel target)
+    // Node visuals: width=120, ellipse size=10, outputs at x=120-6, inputs at x=-4
+    private const double NodeWidth = 120;
+    private const double EllW = 10;
+    private const double EllH = 10;
+    private const double RowStartY = 8;
+    private const double RowPitch = 12;
+
+    public GraphEdgeViewModel(
+        GraphNodeViewModel source, int sourceOutputIndex,
+        GraphNodeViewModel target, int targetInputIndex )
     {
-        Source = source;
-        Target = target;
+        SourceNode = source;
+        TargetNode = target;
+        SourceOutputIndex = sourceOutputIndex;
+        TargetInputIndex = targetInputIndex;
 
-        Source.PropertyChanged += OnPositionChanged;
-        Target.PropertyChanged += OnPositionChanged;
+        SourceNode.PropertyChanged += OnPositionChanged;
+        TargetNode.PropertyChanged += OnPositionChanged;
     }
 
     private void OnPositionChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(Source.X) or nameof(Source.Y) or
-            nameof(Target.X) or nameof(Target.Y))
+        if (e.PropertyName is nameof(SourceNode.X) or nameof(SourceNode.Y) 
+            or nameof(TargetNode.X) or nameof(TargetNode.Y))
         {
             OnPropertyChanged(nameof(StartPoint));
             OnPropertyChanged(nameof(EndPoint));
         }
     }
 
-    public Point StartPoint => new(Source.X + 116, Source.Y + 30); // offset to center right
-    public Point EndPoint => new(Target.X + -4, Target.Y + 8); // offset to center left
+    // Center of output ellipse (right edge)
+    public Point StartPoint
+        => new(
+            SourceNode.X + (NodeWidth - 6) + EllW / 2.0,
+            SourceNode.Y + (RowStartY + SourceOutputIndex * RowPitch) + EllH / 2.0);
+
+    // Center of input ellipse (left edge)
+    public Point EndPoint
+        => new(
+            TargetNode.X + (-4) + EllW / 2.0,
+            TargetNode.Y + (RowStartY + TargetInputIndex * RowPitch) + EllH / 2.0);
+
 }

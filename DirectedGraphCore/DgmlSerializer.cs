@@ -10,10 +10,18 @@ using System.Xml;
 using System.Xml.Linq;
 using System.IO;
 
+/// <summary>
+/// DGML Directed Graph Markup Language serializer/deserializer
+/// </summary>
 public static class DgmlSerializer
 {
     private const string DgmlNs = "http://schemas.microsoft.com/vs/2009/dgml";
 
+    /// <summary>
+    /// Serialize and save to a path in DGML format
+    /// </summary>
+    /// <param name="graph"></param>
+    /// <param name="filePath"></param>
     public static void Save(GraphModel graph, string filePath)
     {
         var settings = new XmlWriterSettings { Indent = true };
@@ -35,8 +43,8 @@ public static class DgmlSerializer
         foreach (var edge in graph.Edges)
         {
             writer.WriteStartElement("Link");
-            writer.WriteAttributeString("Source", edge.SourceId);
-            writer.WriteAttributeString("Target", edge.TargetId);
+            writer.WriteAttributeString("Source", edge.SourceNodeId);
+            writer.WriteAttributeString("Target", edge.TargetNodeId);
             writer.WriteEndElement();
         }
         writer.WriteEndElement(); // Links
@@ -44,6 +52,12 @@ public static class DgmlSerializer
         writer.WriteEndElement(); // DirectedGraph
     }
 
+    /// <summary>
+    /// Read and deserialize from a DGML file.
+    /// Returns a new GraphModel instance.
+    /// </summary>
+    /// <param name="filePath"></param>
+    /// <returns></returns>
     public static GraphModel Load(string filePath)
     {
         var graph = new GraphModel();

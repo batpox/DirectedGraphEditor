@@ -55,6 +55,9 @@ public class GraphConnection
     }
 }
 
+/// <summary>
+/// The overall directed graph model, consisting of Nodes and Edges
+/// </summary>
 public class GraphModel
 {
     public Dictionary<string, Node> Nodes { get; } = new();
@@ -66,11 +69,16 @@ public class GraphModel
             Nodes[id] = new Node { Id = id, Label = label ?? id };
     }
 
-    public void AddEdge(string sourceId, string targetId)
+    /// <summary>
+    /// An edge that connects two nodes. The nodes may be one and the same.
+    /// </summary>
+    /// <param name="sourceNodeId"></param>
+    /// <param name="targetNodeId"></param>
+    public void AddEdge(string sourceNodeId, string targetNodeId)
     {
-        AddNode(sourceId);
-        AddNode(targetId);
-        Edges.Add(new Edge { SourceId = sourceId, TargetId = targetId });
+        AddNode(sourceNodeId);
+        AddNode(targetNodeId);
+        Edges.Add(new Edge { SourceNodeId = sourceNodeId, TargetNodeId = targetNodeId });
     }
 
     public void SaveToFile(string filePath)
@@ -92,6 +100,6 @@ public class Node
 
 public class Edge
 {
-    public string SourceId { get; set; }
-    public string TargetId { get; set; }
+    public string SourceNodeId { get; set; }
+    public string TargetNodeId { get; set; }
 }

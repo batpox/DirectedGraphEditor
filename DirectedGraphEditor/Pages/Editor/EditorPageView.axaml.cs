@@ -39,6 +39,7 @@ public sealed partial class EditorPageView : UserControl
 
     private readonly List<Ellipse> inputSlotEllipses = new();
 
+    private int tempStartOutputIndex = -1;
 
     public EditorPageView()
     {
@@ -143,8 +144,6 @@ public sealed partial class EditorPageView : UserControl
         return reader.ReadToEnd();
     }
 
-
-
     private void RenderNodes(IEnumerable<GraphNodeViewModel> nodes)
     {
         //GraphCanvas.Children.Clear();
@@ -174,8 +173,6 @@ public sealed partial class EditorPageView : UserControl
         }
     }
 
-
-
     private void UpdateEdgeShapes()
     {
         foreach (var line in GraphCanvas.Children.OfType<Line>())
@@ -188,6 +185,10 @@ public sealed partial class EditorPageView : UserControl
         }
     }
 
+    /// <summary>
+    /// Render a node, with text and slots.
+    /// </summary>
+    /// <param name="gnvm"></param>
     private void DrawNode(GraphNodeViewModel gnvm)
     {
 
@@ -285,18 +286,22 @@ public sealed partial class EditorPageView : UserControl
         // 1) Rubber-band start: if clicked an outgoing slot ellipse
         if (e.Source is Ellipse slotEllipse 
             && slotEllipse.Tag is GraphSlot slot
-            && slotEllipse.DataContext is GraphNodeViewModel slotOwner
-            )
+            && slot.Owner == (slotEllipse.DataContext as GraphNodeViewModel)?.Node
+            && slot.Direction == GraphSlotDirection.Output )
         {
-            tempStartNode = slotOwner;
-            tempStartPoint = pt;
+            tempStartNode = (GraphNodeViewModel)slotEllipse.DataContext!;
+            tempStartOutputIndex = tempStartNode.Node.Outputs.IndexOf(slot);
+
+            //tempStartNode = slotOwner;
+            //tempStartPoint = pt;    // center of the ellipse in GraphCanvas coords
+            var center = slotEllipse.TranslatePoint(new Point(5, 5), GraphCanvas) ?? e.GetPosition(GraphCanvas);
 
             tempLine = new Line
             {
                 Stroke = Brushes.Yellow,
                 StrokeThickness = 2,
-                StartPoint = pt,
-                EndPoint = pt
+                StartPoint = center,
+                EndPoint = center
             };
 
             GraphCanvas.Children.Add(tempLine);
@@ -327,10 +332,30 @@ public sealed partial class EditorPageView : UserControl
 
     private void OnCanvasPointerMoved(object? sender, PointerEventArgs e)
     {
-        // A) rubber-band
+        // While active rubber-band, if over a node, then preview the nearest Input slot
         if (tempLine != null)
         {
-            tempLine.EndPoint = e.GetPosition(GraphCanvas);
+            var pt = e.GetPosition(GraphCanvas);
+            var epvm = DataContext as EditorPageViewModel;
+            var target = epvm?.NodesVm.FirstOrDefault(n =>
+                Math.Abs(n.X - pt.X) < 60 && Math.Abs(n.Y - pt.Y) < 30);
+
+            if (target != null && target.Node.Inputs.Count > 0)
+            {
+                var localY = pt.Y - target.Y;
+                var idx = (int)Math.Round((localY - (RowStartY + 5)) / RowPitch);
+                idx = Clamp(idx, 0, target.Node.Inputs.Count - 1);
+
+                // input center: x = -4 + EllW/2, y = RowStartY + idx*RowPitch + EllH/2
+                var end = new Point(
+                    target.X + (-4) + 5,
+                    target.Y + (RowStartY + idx * RowPitch) + 5);
+                tempLine.EndPoint = end;
+            }
+            else
+            {
+                tempLine.EndPoint = pt;
+            }
             return;
         }
 
@@ -353,6 +378,11 @@ public sealed partial class EditorPageView : UserControl
         }
     }
 
+    private static int Clamp(int v, int min, int max) => v < min ? min : (v > max ? max : v);
+
+    private const double RowStartY = 8;
+    private const double RowPitch = 12;
+
     private void OnCanvasPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
         var pt = e.GetPosition(GraphCanvas);
@@ -366,12 +396,21 @@ public sealed partial class EditorPageView : UserControl
                 && DataContext is EditorPageViewModel epvm)
             {
                 var target = epvm.NodesVm.FirstOrDefault(n =>
-                     Math.Abs(n.X - pt.X) < 60 &&
-                     Math.Abs(n.Y - pt.Y) < 30);
+                        Math.Abs(n.X - pt.X) < 60 
+                     && Math.Abs(n.Y - pt.Y) < 30);
 
-                if (target != null && target != tempStartNode)
+                if (target != null && target != tempStartNode
+                    && target.Node.Inputs.Count > 0
+                    && tempStartOutputIndex >= 0 )
                 {
-                    var newEdge = new GraphEdgeViewModel(tempStartNode, target);
+                    // estimate nearest input slot row by Y
+                    var localY = pt.Y - target.Y;
+                    var idx = (int)Math.Round((localY - (RowStartY + 5)) / RowPitch);
+                    var targetInputIndex = Clamp(idx, 0, target.Node.Inputs.Count - 1);
+
+                    var newEdge = new GraphEdgeViewModel(
+                        tempStartNode, tempStartOutputIndex, 
+                        target, targetInputIndex);
                     epvm.Edges.Add(newEdge);
                     DrawEdge(newEdge);
                     UpdateEdgeShapes();
@@ -380,6 +419,8 @@ public sealed partial class EditorPageView : UserControl
 
             tempLine = null;
             tempStartNode = null;
+            tempStartOutputIndex = -1;
+
             e.Handled = true;
             return;
         }
