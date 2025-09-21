@@ -14,6 +14,8 @@ public partial class GraphNodeViewModel : ObservableObject
 
     public GraphNode Node { get; }
 
+    public NodeStyle Style { get; } = new(); // default style
+
     public GraphNodeViewModel(GraphNode node, double x = 0, double y = 0)
     {
         Node = node;

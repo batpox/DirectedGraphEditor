@@ -1,0 +1,36 @@
+﻿<?xml version='1.0' encoding='UTF-8'?>
+<DirectedGraphStyles>
+  <GlobalStyles>
+    <Background>#1E1E1E</Background>
+  </GlobalStyles>
+  <NodeStyles>
+    <Style name="Default">
+      <Width>120</Width>
+      <Height>60</Height>
+      <CornerRadius>8</CornerRadius>
+      <Fill>#444</Fill>
+      <BorderBrush>White</BorderBrush>
+      <BorderThickness>1</BorderThickness>
+      <SlotRadius>6</SlotRadius>
+      <SlotOffsetX>10</SlotOffsetX>
+      <SlotSpacingY>20</SlotSpacingY>
+    </Style>
+    <Style name="Warning">
+      <Fill>#663300</Fill>
+      <BorderBrush>Orange</BorderBrush>
+    </Style>
+  </NodeStyles>
+  <EdgeStyles>
+    <Style name="Default">
+      <Stroke>Yellow</Stroke>
+      <StrokeThickness>2</StrokeThickness>
+      <ShowArrowhead>false</ShowArrowhead>
+    </Style>
+    <Style name="Emphasis">
+      <Stroke>Red</Stroke>
+      <StrokeThickness>3</StrokeThickness>
+      <ShowArrowhead>true</ShowArrowhead>
+    </Style>
+  </EdgeStyles>
+</DirectedGraphStyles>
+

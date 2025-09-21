@@ -45,13 +45,16 @@ public sealed class GraphEdgeViewModel : ObservableObject
     // Center of output ellipse (right edge)
     public Point StartPoint
         => new(
-            SourceNode.X + (NodeWidth - 6) + EllW / 2.0,
-            SourceNode.Y + (RowStartY + SourceOutputIndex * RowPitch) + EllH / 2.0);
+    SourceNode.X + SourceNode.Style.OutputXOffset + SourceNode.Style.SlotRadius,
+    SourceNode.Y + SourceNode.Style.SlotYOffset 
+            + SourceOutputIndex * SourceNode.Style.SlotYPitch + SourceNode.Style.SlotRadius);
+
 
     // Center of input ellipse (left edge)
     public Point EndPoint
         => new(
-            TargetNode.X + (-4) + EllW / 2.0,
-            TargetNode.Y + (RowStartY + TargetInputIndex * RowPitch) + EllH / 2.0);
+    TargetNode.X + TargetNode.Style.InputXOffset + TargetNode.Style.SlotRadius,
+    TargetNode.Y + TargetNode.Style.SlotYOffset 
+            + TargetInputIndex * TargetNode.Style.SlotYPitch + TargetNode.Style.SlotRadius);
 
 }
