@@ -1,5 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using DirectedGraphCore;
+using DirectedGraphCore.DirectedGraph;
 using System.Collections.Generic;
 
 namespace DirectedGraphEditor.Controls.GraphNodeControl;

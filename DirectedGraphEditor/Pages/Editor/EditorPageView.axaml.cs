@@ -13,7 +13,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using AvaloniaEdit.Utils;
-using DirectedGraphCore;
+using DirectedGraphCore.DirectedGraph;
 using DirectedGraphEditor.Controls.GraphNodeControl;
 using DirectedGraphEditor.Helpers;
 

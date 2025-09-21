@@ -74,6 +74,7 @@
 
   <ItemGroup>
     <Folder Include="Assets\Icons\" />
+    <Folder Include="Rendering\" />
     <Folder Include="Styles\" />
   </ItemGroup>
 

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DirectedGraphCore;
+namespace DirectedGraphCore.DirectedGraph;
 
 using System.Xml;
 using System.Xml.Linq;

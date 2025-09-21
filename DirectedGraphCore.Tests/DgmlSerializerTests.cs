@@ -1,6 +1,6 @@
 using System.IO;
 using Xunit;
-using DirectedGraphCore;
+using DirectedGraphCore.DirectedGraph;
 
 namespace DirectedGraphCore.Tests;
 

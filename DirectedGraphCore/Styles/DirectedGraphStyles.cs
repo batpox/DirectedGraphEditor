@@ -1,10 +1,9 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml.Serialization;
 
-namespace DirectedGraphEditor.Styles
+namespace DirectedGraphCore.Styles
 {
     [XmlRoot("GraphStyles")]
     public class DirectedGraphStyles
