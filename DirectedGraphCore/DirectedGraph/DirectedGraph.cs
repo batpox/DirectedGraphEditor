@@ -4,7 +4,10 @@ using System.Collections.Generic;
 namespace DirectedGraphCore.DirectedGraph;
 
 
-
+/// <summary>
+/// The node in a directed graph, with input and output slots where
+/// the edges can connect.
+/// </summary>
 public class GraphNode
 {
     /// <summary>Unique ID for Node</summary>
@@ -20,6 +23,9 @@ public class GraphNode
     }
 }
 
+/// <summary>
+/// Locations where edges can connect to a node.
+/// </summary>
 public class GraphSlot
 {
     public string Name { get; }
@@ -40,33 +46,33 @@ public enum GraphSlotDirection
     Output
 }
 
-public class GraphConnection
-{
-    public GraphSlot From { get; }
-    public GraphSlot To { get; }
+////public class GraphConnection
+////{
+////    public GraphSlot From { get; }
+////    public GraphSlot To { get; }
 
-    public GraphConnection(GraphSlot from, GraphSlot to)
-    {
-        if (from.Direction != GraphSlotDirection.Output || to.Direction != GraphSlotDirection.Input)
-            throw new ArgumentException("Invalid connection: must be Output -> Input");
+////    public GraphConnection(GraphSlot from, GraphSlot to)
+////    {
+////        if (from.Direction != GraphSlotDirection.Output || to.Direction != GraphSlotDirection.Input)
+////            throw new ArgumentException("Invalid connection: must be Output -> Input");
 
-        From = from;
-        To = to;
-    }
-}
+////        From = from;
+////        To = to;
+////    }
+////}
 
 /// <summary>
 /// The overall directed graph model, consisting of Nodes and Edges
 /// </summary>
 public class GraphModel
 {
-    public Dictionary<string, Node> Nodes { get; } = new();
-    public List<Edge> Edges { get; } = new();
+    public Dictionary<string, GraphNode> Nodes { get; } = new();
+    public List<GraphEdge> Edges { get; } = new();
 
-    public void AddNode(string id, string label = null)
+    public void AddNode(string id, string name = null)
     {
         if (!Nodes.ContainsKey(id))
-            Nodes[id] = new Node { Id = id, Label = label ?? id };
+            Nodes[id] = new GraphNode( id, name );
     }
 
     /// <summary>
@@ -78,7 +84,7 @@ public class GraphModel
     {
         AddNode(sourceNodeId);
         AddNode(targetNodeId);
-        Edges.Add(new Edge { SourceNodeId = sourceNodeId, TargetNodeId = targetNodeId });
+        Edges.Add(new GraphEdge { SourceNodeId = sourceNodeId, TargetNodeId = targetNodeId });
     }
 
     public void SaveToFile(string filePath)
@@ -92,14 +98,14 @@ public class GraphModel
     }
 }
 
-public class Node
-{
-    public string Id { get; set; }
-    public string Label { get; set; }
-}
+////public class GraphNode
+////{
+////    public required string Id { get; set; }
+////    public required string Label { get; set; }
+////}
 
-public class Edge
+public class GraphEdge
 {
-    public string SourceNodeId { get; set; }
-    public string TargetNodeId { get; set; }
+    public required string SourceNodeId { get; set; }
+    public required string TargetNodeId { get; set; }
 }

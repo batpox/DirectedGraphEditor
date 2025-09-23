@@ -34,15 +34,15 @@ public static class DgmlSerializer
         {
             writer.WriteStartElement("Node");
             writer.WriteAttributeString("Id", node.Id);
-            writer.WriteAttributeString("Label", node.Label ?? node.Id);
+            writer.WriteAttributeString("Name", node.Name ?? node.Id);
             writer.WriteEndElement();
         }
         writer.WriteEndElement(); // Nodes
 
-        writer.WriteStartElement("Links");
+        writer.WriteStartElement("Edges");
         foreach (var edge in graph.Edges)
         {
-            writer.WriteStartElement("Link");
+            writer.WriteStartElement("Edge");
             writer.WriteAttributeString("Source", edge.SourceNodeId);
             writer.WriteAttributeString("Target", edge.TargetNodeId);
             writer.WriteEndElement();
@@ -78,10 +78,10 @@ public static class DgmlSerializer
             }
         }
 
-        var links = doc.Root?.Element(ns + "Links");
+        var links = doc.Root?.Element(ns + "Edges");
         if (links != null)
         {
-            foreach (var link in links.Elements(ns + "Link"))
+            foreach (var link in links.Elements(ns + "Edge"))
             {
                 var source = link.Attribute("Source")?.Value;
                 var target = link.Attribute("Target")?.Value;
