@@ -37,7 +37,7 @@ public sealed class MainViewModel : BaseViewModel
         LogPage = AttachEvents(new LogPageViewModel());
 
         // Optional: populate test nodes
-        EditorPage.CreateNodeData();
+        //EditorPage.LoadFromFiles()
     }
 
     public event EventHandler? ActivatePageRequested;

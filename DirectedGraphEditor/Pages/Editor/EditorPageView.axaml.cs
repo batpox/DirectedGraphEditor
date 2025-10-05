@@ -62,7 +62,7 @@ public sealed partial class EditorPageView : UserControl
 
     private void InitializeGraph()
     {
-        if (GraphCanvas is null || tempLine is null)
+        if (GraphCanvas is null) // || tempLine is null)
         {
             Console.WriteLine("Still waiting for GraphCanvas/TempLine...");
             return;
@@ -75,7 +75,8 @@ public sealed partial class EditorPageView : UserControl
         GraphCanvas.Children.Clear();
         nodeContainers.Clear();
 
-        vm.CreateNodeData();      // load or refresh your nodes
+        vm.LoadFromFiles("Graphs/TestFile15Nodes.dgml"); // load your graph from files
+        //vm.CreateNodeData();      // load or refresh your nodes
         RenderEdges(vm.Edges);
         RenderNodes(vm.NodesVm);
     }
@@ -91,7 +92,7 @@ public sealed partial class EditorPageView : UserControl
         if (DataContext is EditorPageViewModel vm)
         {
             GraphCanvas!.Children.Clear();
-            vm.CreateNodeData(); // optional
+            //vm.CreateNodeData(); // optional
             RenderEdges(vm.Edges);
             RenderNodes(vm.NodesVm);
         }
@@ -262,7 +263,7 @@ public sealed partial class EditorPageView : UserControl
         };
         Canvas.SetLeft(ellipse, x);
         Canvas.SetTop(ellipse, y);
-        ToolTip.SetTip(ellipse, slot.Name);
+        ToolTip.SetTip(ellipse, slot.Id);
         return ellipse;
     }
 
@@ -279,6 +280,32 @@ public sealed partial class EditorPageView : UserControl
         GraphCanvas.Children.Add(line);
     }
 
+    ////public void SelectEdgeAtSlot(GraphSlot slot)
+    ////{
+    ////    if (!_edgesBySlot.TryGetValue(slot, out var list) || list.Count == 0)
+    ////        return;
+
+    ////    if (_activeSlot != slot)
+    ////    {
+    ////        _activeSlot = slot;
+    ////        _selectedEdgeIndex = 0;
+    ////    }
+    ////    else
+    ////    {
+    ////        _selectedEdgeIndex = (_selectedEdgeIndex + 1) % list.Count;
+    ////    }
+
+    ////    foreach (var e in Edges)
+    ////        e.IsHighlighted = false;
+    ////    list[_selectedEdgeIndex].IsHighlighted = true;
+    ////}
+
+    ////private void OnSlotClicked(GraphSlot slot, PointerPressedEventArgs e)
+    ////{
+    ////    if (DataContext is not EditorPageViewModel vm) return;
+    ////    vm.SelectEdgeAtSlot(slot);
+    ////}
+
     private void OnCanvasPointerPressed(object? s, PointerPressedEventArgs e)
     {
         var pt = e.GetPosition(GraphCanvas);
@@ -286,7 +313,7 @@ public sealed partial class EditorPageView : UserControl
         // 1) Rubber-band start: if clicked an outgoing slot ellipse
         if (e.Source is Ellipse slotEllipse 
             && slotEllipse.Tag is GraphSlot slot
-            && slot.Owner == (slotEllipse.DataContext as GraphNodeViewModel)?.Node
+            && slot.MyNode == (slotEllipse.DataContext as GraphNodeViewModel)?.Node
             && slot.Direction == GraphSlotDirection.Output )
         {
             tempStartNode = (GraphNodeViewModel)slotEllipse.DataContext!;

@@ -86,4 +86,14 @@
   </ItemGroup>
 
 
+  <ItemGroup>
+    <None Update="Graphs\TestFile15Nodes.dgml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Graphs\TestFile15Nodes.dgml-layout">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+
 </Project>

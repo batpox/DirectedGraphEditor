@@ -10,8 +10,8 @@ namespace DirectedGraphCore.Tests;
         public void SaveAndLoadGraph_RoundTrip_PreservesStructure()
         {
             var graph = new GraphModel();
-            graph.AddEdge("A", "B");
-            graph.AddEdge("B", "C");
+            graph.FindOrAddEdge("A", "B");
+            graph.FindOrAddEdge("B", "C");
 
             string tempFile = Path.GetTempFileName();
 
@@ -20,8 +20,8 @@ namespace DirectedGraphCore.Tests;
 
             Assert.Equal(3, loaded.Nodes.Count);
             Assert.Equal(2, loaded.Edges.Count);
-            Assert.Contains(loaded.Edges, e => e.SourceNodeId == "A" && e.TargetNodeId == "B");
-            Assert.Contains(loaded.Edges, e => e.SourceNodeId == "B" && e.TargetNodeId == "C");
+            Assert.Contains(loaded.Edges.Values, e => e.SourceNodeId == "A" && e.TargetNodeId == "B");
+            Assert.Contains(loaded.Edges.Values, e => e.SourceNodeId == "B" && e.TargetNodeId == "C");
         }
     }
 

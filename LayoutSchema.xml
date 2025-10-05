@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://schemas.microsoft.com/vs/2009/dgml"
+           xmlns="http://schemas.microsoft.com/vs/2009/dgml"
+           elementFormDefault="qualified">
+
+  <!-- Extend Node -->
+  <xs:complexType name="NodeType">
+    <xs:sequence>
+      <!-- Allow nested properties or annotations if desired -->
+      <xs:any minOccurs="0" maxOccurs="unbounded" processContents="lax"/>
+    </xs:sequence>
+    <xs:attribute name="Id" type="xs:string" use="required"/>
+    <xs:attribute name="Label" type="xs:string"/>
+    <xs:attribute name="Layout" type="xs:string"/>
+    <!-- Position: 2D (x,y) or 3D (x,y,z) -->
+    <xs:attribute name="Position" type="PositionType"/>
+    <!-- Optional 3D extras -->
+    <xs:attribute name="Orientation" type="TripleType"/>
+    <xs:attribute name="Scale" type="TripleType"/>
+    <!-- Arbitrary extensions (Stride, Avalonia, etc.) -->
+    <xs:anyAttribute processContents="lax"/>
+  </xs:complexType>
+
+  <!-- Extend Link -->
+  <xs:complexType name="LinkType">
+    <xs:sequence>
+      <xs:any minOccurs="0" maxOccurs="unbounded" processContents="lax"/>
+    </xs:sequence>
+    <xs:attribute name="Id" type="xs:string"/>
+    <xs:attribute name="Source" type="xs:string" use="required"/>
+    <xs:attribute name="Target" type="xs:string" use="required"/>
+    <xs:attribute name="Label" type="xs:string"/>
+    <!-- Polyline points -->
+    <xs:attribute name="Bounds" type="xs:string"/>
+    <xs:anyAttribute processContents="lax"/>
+  </xs:complexType>
+
+  <!-- Position: allow 2 or 3 floats -->
+  <xs:simpleType name="PositionType">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?(\s*,\s*-?\d+(\.\d+)?){0,1}\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Triple: x,y,z style -->
+  <xs:simpleType name="TripleType">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\s*-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+</xs:schema>

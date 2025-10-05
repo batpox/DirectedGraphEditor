@@ -14,6 +14,10 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Data", "Data", "{18397582-AE84-4593-81EF-5EF72D0A02BA}"
 	ProjectSection(SolutionItems) = preProject
 		TestFile1.dgml = TestFile1.dgml
+		LayoutSchema.xml = LayoutSchema.xml
+		TestFile15Nodes.dgml = TestFile15Nodes.dgml
+		TestFile15Nodes.dgml-layout = TestFile15Nodes.dgml-layout
+		XMLFile2.xml = XMLFile2.xml
 	EndProjectSection
 EndProject
 Global

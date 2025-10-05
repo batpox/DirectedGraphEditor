@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<DirectedGraph xmlns="http://schemas.microsoft.com/vs/2009/dgml">
+  <Nodes>
+    <Node Id="A" Label="Alpha" Category="Group1" />
+    <Node Id="B" Label="Beta" Category="Group1" />
+    <Node Id="C" Label="Gamma" Category="Group1" />
+    <Node Id="D" Label="Delta" Category="Group1" />
+    <Node Id="E" Label="Epsilon" Category="Group2" />
+    <Node Id="F" Label="Zeta" Category="Group2" />
+    <Node Id="G" Label="Eta" Category="Group2" />
+    <Node Id="H" Label="Theta" Category="Group2" />
+    <Node Id="I" Label="Iota" Category="Group3" />
+    <Node Id="J" Label="Kappa" Category="Group3" />
+    <Node Id="K" Label="Lambda" Category="Group3" />
+    <Node Id="L" Label="Mu" Category="Group3" />
+    <Node Id="M" Label="Nu" Category="Group4" />
+    <Node Id="N" Label="Xi" Category="Group4" />
+    <Node Id="O" Label="Omicron" Category="Group4" />
+  </Nodes>
+
+  <Links>
+    <Link Source="A" Target="B" Label="next" />
+    <Link Source="B" Target="C" Label="next" />
+    <Link Source="C" Target="D" Label="next" />
+    <Link Source="D" Target="A" Label="cycle" />
+
+    <Link Source="A" Target="E" Label="cross" />
+    <Link Source="B" Target="F" Label="cross" />
+    <Link Source="C" Target="G" Label="cross" />
+    <Link Source="D" Target="H" Label="cross" />
+
+    <Link Source="E" Target="I" Label="flow" />
+    <Link Source="F" Target="J" Label="flow" />
+    <Link Source="G" Target="K" Label="flow" />
+    <Link Source="H" Target="L" Label="flow" />
+
+    <Link Source="I" Target="M" Label="chain" />
+    <Link Source="J" Target="N" Label="chain" />
+    <Link Source="K" Target="O" Label="chain" />
+
+    <Link Source="L" Target="M" Label="alt" />
+    <Link Source="N" Target="O" Label="alt" />
+
+    <Link Source="M" Target="A" Label="feedback" />
+    <Link Source="O" Target="E" Label="feedback" />
+
+    <Link Source="F" Target="B" Category="Reverse" />
+    <Link Source="J" Target="F" Category="Reverse" />
+  </Links>
+
+  <Categories>
+    <Category Id="Group1" Label="Group 1" />
+    <Category Id="Group2" Label="Group 2" />
+    <Category Id="Group3" Label="Group 3" />
+    <Category Id="Group4" Label="Group 4" />
+    <Category Id="Reverse" Label="Reverse Link" />
+  </Categories>
+</DirectedGraph>
+
+
