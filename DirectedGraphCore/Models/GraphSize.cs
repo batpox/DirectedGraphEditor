@@ -1,4 +1,4 @@
-﻿namespace DirectedGraphCore.DirectedGraph;
+﻿namespace DirectedGraphCore.Models;
 
 public class GraphSize
 {

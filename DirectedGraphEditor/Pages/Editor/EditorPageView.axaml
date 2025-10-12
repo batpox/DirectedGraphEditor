@@ -43,6 +43,15 @@
     </Style>
   </UserControl.Styles>
 
+  <DockPanel>
+    <Menu DockPanel.Dock="Top">
+      <MenuItem Header="_File">
+        <MenuItem x:Name="OpenMenuItem" Header="_Open..."/>
+        <MenuItem x:Name="SaveMenuItem" Header="_Save"/>
+        <MenuItem x:Name="SaveAsMenuItem" Header="Save _As..."/>
+        <MenuItem Header="_Exit" Command="{Binding ExitCommand}" />
+      </MenuItem>
+    </Menu>
 
   <Canvas x:Name="GraphCanvas"
         Background="#222"
@@ -62,6 +71,7 @@
           -->
 
   </Canvas>
+    </DockPanel>
 
 </UserControl>
 

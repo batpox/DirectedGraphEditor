@@ -1,7 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 
-
-namespace DirectedGraphCore.DirectedGraph;
+namespace DirectedGraphCore.Models;
 
 /// <summary>
 /// The node in a directed graph, with input and output slots where

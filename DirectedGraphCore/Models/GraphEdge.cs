@@ -4,7 +4,7 @@
 ////    public required string Id { get; set; }
 ////    public required string Label { get; set; }
 ////}
-using DirectedGraphCore.DirectedGraph;
+using DirectedGraphCore.Models;
 
 /// <summary>
 /// Serialized DGML as 'Link'

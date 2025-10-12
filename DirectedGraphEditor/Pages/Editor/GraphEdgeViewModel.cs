@@ -7,11 +7,15 @@ namespace DirectedGraphEditor.Pages.Editor;
 
 public sealed class GraphEdgeViewModel : ObservableObject
 {
-    public GraphNodeViewModel SourceNode { get; }
-    public GraphNodeViewModel TargetNode { get; }
-    public int SourceOutputIndex { get; }
-    public int TargetInputIndex { get; }
+    public GraphEdge Edge { get; } // link to model edge
 
+    public GraphNodeViewModel SourceNode { get; set; }
+    public GraphNodeViewModel TargetNode { get; set; }
+    public int SourceOutputIndex { get; set; }
+    public int TargetInputIndex { get; set; }
+
+    public bool IsHighlighted { get; set; } = false;  
+    
     // Node visuals: width=120, ellipse size=10, outputs at x=120-6, inputs at x=-4
     private const double NodeWidth = 120;
     private const double EllW = 10;
@@ -20,14 +24,21 @@ public sealed class GraphEdgeViewModel : ObservableObject
     private const double RowPitch = 12;
 
     public GraphEdgeViewModel(
+        GraphEdge edge,
         GraphNodeViewModel source, int sourceOutputIndex,
         GraphNodeViewModel target, int targetInputIndex )
     {
+        Edge = edge;
         SourceNode = source;
         TargetNode = target;
         SourceOutputIndex = sourceOutputIndex;
         TargetInputIndex = targetInputIndex;
 
+        SubscribeToNodes();
+    }
+
+    private void SubscribeToNodes()
+    {
         SourceNode.PropertyChanged += OnPositionChanged;
         TargetNode.PropertyChanged += OnPositionChanged;
     }
@@ -40,6 +51,30 @@ public sealed class GraphEdgeViewModel : ObservableObject
             OnPropertyChanged(nameof(StartPoint));
             OnPropertyChanged(nameof(EndPoint));
         }
+    }
+
+    public void UpdateSource(GraphNodeViewModel newSource, int newSlotIndex)
+    {
+        SourceNode.PropertyChanged -= OnPositionChanged;
+        SourceNode = newSource;
+        SourceOutputIndex = newSlotIndex;
+        SubscribeToNodes();
+        NotifyEndpointsChanged();
+    }
+
+    public void UpdateTarget(GraphNodeViewModel newTarget, int newSlotIndex)
+    {
+        TargetNode.PropertyChanged -= OnPositionChanged;
+        TargetNode = newTarget;
+        TargetInputIndex = newSlotIndex;
+        SubscribeToNodes();
+        NotifyEndpointsChanged();
+    }
+
+    public void NotifyEndpointsChanged()
+    {
+        OnPropertyChanged(nameof(StartPoint));
+        OnPropertyChanged(nameof(EndPoint));
     }
 
     // Center of output ellipse (right edge)

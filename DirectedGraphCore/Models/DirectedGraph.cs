@@ -1,7 +1,7 @@
 ﻿using System.Xml.Serialization;
 using System.Collections.Generic;
 
-namespace DirectedGraphCore.DirectedGraph;
+namespace DirectedGraphCore.Models;
 
 public enum GraphSlotDirection
 {

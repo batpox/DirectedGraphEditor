@@ -3,7 +3,7 @@ using System.Reflection;
 using System.Xml;
 using System.Xml.Linq;
 
-namespace DirectedGraphCore.DirectedGraph;
+namespace DirectedGraphCore.Models;
 
 /// <summary>
 /// DGML Directed Graph Markup Language serializer/deserializer
@@ -15,9 +15,9 @@ public static class DgmlSerializer
     /// <summary>
     /// Serialize into two files: semantic graph (.dgml) and layout (.dgml-layout)
     /// </summary>
-    public static void Save(GraphModel graph, string filePathBase)
+    public static void SaveAsDgml(GraphModel graph, string filePathBase)
     {
-        var ns = DgmlNs;
+        string ns = DgmlNs;
 
         // --- Save. Base semantic graph ---
         {
@@ -49,47 +49,60 @@ public static class DgmlSerializer
         }
 
         // --- Save Layout overlay ---
+        SaveAsDgmlLayout(ref graph, filePathBase);
+    }
+
+    /// <summary>
+    /// Load the .dgml-layout overlay if present, and merge into the graph.
+    /// </summary>
+    /// <param name="graph"></param>
+    /// <param name="basePath"></param>
+    private static void SaveAsDgmlLayout(ref GraphModel graph, string basePath)
+    {
+        string ns = DgmlNs;
+
+        // --- Load layout overlay (.dgml-layout) if present ---
+        var layoutPath = Path.ChangeExtension(basePath, "dgml-layout");
+
+        var settings = new XmlWriterSettings { Indent = true };
+        using var writer = XmlWriter.Create(layoutPath, settings);
+        writer.WriteStartElement("DirectedGraph", ns);
+
+        writer.WriteStartElement("Nodes");
+        foreach (var node in graph.Nodes.Values)
         {
-            var layoutPath = Path.ChangeExtension(filePathBase, "dgml-layout");
-            var settings = new XmlWriterSettings { Indent = true };
-            using var writer = XmlWriter.Create(layoutPath, settings);
-            writer.WriteStartElement("DirectedGraph", ns);
+            // Here we could look at node.Inputs/Outputs slots if you want per-slot geometry,
+            // but for now treat node itself as having layout.
+            var pos = node.Inputs.FirstOrDefault()?.Position ?? new GraphPosition(0, 0, 0);
+            var size = node.Inputs.FirstOrDefault()?.Size ?? new GraphSize(0, 0, 0);
 
-            writer.WriteStartElement("Nodes");
-            foreach (var node in graph.Nodes.Values)
+            writer.WriteStartElement("Node");
+            writer.WriteAttributeString("Id", node.Id);
+            writer.WriteAttributeString("Layout", "Fixed");
+            writer.WriteAttributeString("Position", $"{pos.X},{pos.Y},{pos.Z}");
+            writer.WriteAttributeString("Size", $"{size.Width},{size.Height},{size.Depth}");
+
+            foreach (var slot in node.Inputs.Concat(node.Outputs))
             {
-                // Here we could look at node.Inputs/Outputs slots if you want per-slot geometry,
-                // but for now treat node itself as having layout.
-                var pos = node.Inputs.FirstOrDefault()?.Position ?? new GraphPosition(0, 0, 0);
-                var size = node.Inputs.FirstOrDefault()?.Size ?? new GraphSize(0, 0, 0);
-
-                writer.WriteStartElement("Node");
-                writer.WriteAttributeString("Id", node.Id);
-                writer.WriteAttributeString("Layout", "Fixed");
-                writer.WriteAttributeString("Position", $"{pos.X},{pos.Y},{pos.Z}");
-                writer.WriteAttributeString("Size", $"{size.Width},{size.Height},{size.Depth}");
-
-                foreach (var slot in node.Inputs.Concat(node.Outputs))
-                {
-                    writer.WriteStartElement("Slot");
-                    writer.WriteAttributeString("Id", slot.Id);
-                    writer.WriteAttributeString("Direction", slot.Direction.ToString());
-                    writer.WriteEndElement();
-                }
-
+                writer.WriteStartElement("Slot");
+                writer.WriteAttributeString("Id", slot.Id);
+                writer.WriteAttributeString("Direction", slot.Direction.ToString());
                 writer.WriteEndElement();
             }
-            writer.WriteEndElement(); // Nodes
 
-            writer.WriteEndElement(); // DirectedGraph
+            writer.WriteEndElement();
         }
+        writer.WriteEndElement(); // Nodes
+
+        writer.WriteEndElement(); // DGML layout
+
     }
 
     /// <summary>
     /// Read and deserialize from a DGML file (semantic + optional layout).
     /// Layout may come from legacy (e.g. Bounds), or overlay (e.g. Position+Size.
     /// </summary>
-    public static GraphModel Load(string filePath)
+    public static GraphModel LoadFromDgml(string filePath)
     {
         var graph = new GraphModel();
         XNamespace ns = DgmlNs;
@@ -118,12 +131,12 @@ public static class DgmlSerializer
                     // Format: x,y,width,height
                     var parts = bounds.Split(',');
                     if (parts.Length >= 4 &&
-                        double.TryParse(parts[0], out var x) &&
-                        double.TryParse(parts[1], out var y) &&
-                        double.TryParse(parts[2], out var w) &&
-                        double.TryParse(parts[3], out var h))
+                        float.TryParse(parts[0], out var x) &&
+                        float.TryParse(parts[1], out var y) &&
+                        float.TryParse(parts[2], out var w) &&
+                        float.TryParse(parts[3], out var h))
                     {
-                        gNode.Inputs.Add(new GraphSlot("main", GraphSlotDirection.Input, gNode)
+                        gNode.Inputs.Add(new GraphSlot(0, GraphSlotDirection.Input, gNode)
                         {
                             Position = new GraphPosition(x, y, 0),
                             Size = new GraphSize(w, h, 0)
@@ -148,7 +161,7 @@ public static class DgmlSerializer
             }
         }
 
-        LoadLayout(ref graph, filePath);
+        LoadFromDgmlLayout(ref graph, filePath);
 
         return graph;
     }
@@ -158,7 +171,7 @@ public static class DgmlSerializer
     /// </summary>
     /// <param name="graph"></param>
     /// <param name="basePath"></param>
-    public static void LoadLayout(ref GraphModel graph, string basePath)
+    private static void LoadFromDgmlLayout(ref GraphModel graph, string basePath)
     {
         XNamespace ns = DgmlNs;
 
@@ -181,9 +194,9 @@ public static class DgmlSerializer
                     {
                         var parts = posAttr.Split(',');
                         gnode.Position = new GraphPosition(
-                            double.Parse(parts[0], CultureInfo.InvariantCulture),
-                            double.Parse(parts[1], CultureInfo.InvariantCulture),
-                            parts.Length > 2 ? double.Parse(parts[2]) : 0);
+                            float.Parse(parts[0], CultureInfo.InvariantCulture),
+                            float.Parse(parts[1], CultureInfo.InvariantCulture),
+                            parts.Length > 2 ? float.Parse(parts[2]) : 0);
                     }
 
                     // Size
@@ -203,15 +216,16 @@ public static class DgmlSerializer
                     {
                         foreach (var s in slotElems)
                         {
-                            var name = s.Attribute("Name")?.Value ?? "Slot";
+                            var indexString = s.Attribute("Index")?.Value ?? "0";
+                            int index = int.Parse(indexString);
                             var dirStr = s.Attribute("Direction")?.Value ?? "Input";
                             var dir = dirStr.Equals("Output", StringComparison.OrdinalIgnoreCase)
                                 ? GraphSlotDirection.Output
                                 : GraphSlotDirection.Input;
                             if (dir == GraphSlotDirection.Input)
-                                gnode.Inputs.Add(new GraphSlot(name, dir, gnode));
+                                gnode.Inputs.Add(new GraphSlot(index, dir, gnode));
                             else
-                                gnode.Outputs.Add(new GraphSlot(name, dir, gnode));
+                                gnode.Outputs.Add(new GraphSlot(index, dir, gnode));
                         }
                     }
                 }
@@ -224,13 +238,13 @@ public static class DgmlSerializer
                 {
                     var incoming = graph.Edges.Count(e => e.Value.TargetNodeId == node.Id);
                     for (int ii = 0; ii < incoming; ii++)
-                        node.Inputs.Add(new GraphSlot($"In{ii + 1}", GraphSlotDirection.Input, node));
+                        node.Inputs.Add(new GraphSlot(ii, GraphSlotDirection.Input, node));
                 }
                 if (node.Outputs.Count == 0)
                 {
                     var outgoing = graph.Edges.Count(e => e.Value.SourceNodeId == node.Id);
                     for (int ii = 0; ii < outgoing; ii++)
-                        node.Outputs.Add(new GraphSlot($"Out{ii + 1}", GraphSlotDirection.Output, node));
+                        node.Outputs.Add(new GraphSlot(ii, GraphSlotDirection.Output, node));
                 }
             }
         }

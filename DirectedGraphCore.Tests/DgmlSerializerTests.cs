@@ -1,6 +1,6 @@
 using System.IO;
 using Xunit;
-using DirectedGraphCore.DirectedGraph;
+using DirectedGraphCore.Models;
 
 namespace DirectedGraphCore.Tests;
 
@@ -15,7 +15,7 @@ namespace DirectedGraphCore.Tests;
 
             string tempFile = Path.GetTempFileName();
 
-            graph.SaveToFile(tempFile);
+            graph.SaveAsDgml(tempFile);
             var loaded = GraphModel.LoadFromFile(tempFile);
 
             Assert.Equal(3, loaded.Nodes.Count);

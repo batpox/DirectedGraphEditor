@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using System;
@@ -11,6 +12,18 @@ public partial class GraphNodeControl : UserControl
     {
         InitializeComponent();
     }
+
+    public static readonly StyledProperty<bool> IsSelectedProperty =
+            AvaloniaProperty.Register<GraphNodeControl, bool>(
+                nameof(IsSelected), defaultValue: false);
+
+    public bool IsSelected
+    {
+        get => GetValue(IsSelectedProperty);
+        set => SetValue(IsSelectedProperty, value);
+    }
+
+
 
     private void OnOutputSlotPressed(object? sender, PointerPressedEventArgs e)
     {

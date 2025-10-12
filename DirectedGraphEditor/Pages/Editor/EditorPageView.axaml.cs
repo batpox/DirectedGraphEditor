@@ -1,484 +1,114 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
+using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
 using AvaloniaEdit.Utils;
-using DirectedGraphCore.DirectedGraph;
+using DirectedGraphCore.Models;
+using DirectedGraphEditor.Adapters;
 using DirectedGraphEditor.Controls.GraphNodeControl;
 using DirectedGraphEditor.Helpers;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Threading.Tasks;
 
 namespace DirectedGraphEditor.Pages.Editor;
 
-public sealed partial class EditorPageView : UserControl
+
+public partial class EditorPageView : UserControl
 {
-    private readonly Dictionary<GraphNodeViewModel, Canvas> nodeContainers
-    = new Dictionary<GraphNodeViewModel, Canvas>();
-
-    private GraphNodeViewModel? tempStartNode;
-    private Point tempStartPoint;
-
-    private Line? tempLine;
-
-    private GraphNodeViewModel? dragStartNode;
-    private Point dragStartPoint;
-    private GraphNodeViewModel? draggedNode;
-    private Point dragOffset;
-
-    ////private Line? TempLine;
-    private Ellipse? startSlotEllipse;
-
-    private readonly List<Ellipse> inputSlotEllipses = new();
-
-    private int tempStartOutputIndex = -1;
+    private AvaloniaGraphAdapter? adapter;
 
     public EditorPageView()
     {
         InitializeComponent();
-        GraphCanvas = this.FindControl<Canvas>("GraphCanvas");
 
-        GraphCanvas!.AttachedToVisualTree += OnCanvasLoaded;
+        // Create adapter when the view is ready to render
+        this.AttachedToVisualTree += OnAttachedToVisualTree;
+        this.DetachedFromVisualTree += OnDetachedFromVisualTree;
+
+        OpenMenuItem.Click += OnOpenGraph;
+        SaveMenuItem.Click += OnSaveGraph;
+        SaveAsMenuItem.Click += OnSaveGraphAs;
 
     }
 
-    private void OnCanvasLoaded(object? sender, VisualTreeAttachmentEventArgs e)
+    private void OnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
-        // Only run once
-        GraphCanvas.AttachedToVisualTree -= OnCanvasLoaded;
-
-        InitializeGraph();
-    }
-
-
-
-    private void InitializeGraph()
-    {
-        if (GraphCanvas is null) // || tempLine is null)
-        {
-            Console.WriteLine("Still waiting for GraphCanvas/TempLine...");
-            return;
-        }
-
-        var vm = DataContext as EditorPageViewModel;
-        if (vm == null) 
+        if (DataContext is not EditorPageViewModel vm)
             return;
 
-        GraphCanvas.Children.Clear();
-        nodeContainers.Clear();
-
-        vm.LoadFromFiles("Graphs/TestFile15Nodes.dgml"); // load your graph from files
-        //vm.CreateNodeData();      // load or refresh your nodes
-        RenderEdges(vm.Edges);
-        RenderNodes(vm.NodesVm);
+        // GraphCanvas is the <Canvas x:Name="GraphCanvas"/> in .axaml
+        adapter = new AvaloniaGraphAdapter(vm.Controller, GraphCanvas);
     }
 
-
-    private void GraphCanvas_AttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+    private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
-        throw new NotImplementedException();
+        // Dispose / unsubscribe when view is removed
+        adapter?.Dispose();
+        adapter = null;
     }
 
-    private void OnLoaded(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is EditorPageViewModel vm)
-        {
-            GraphCanvas!.Children.Clear();
-            //vm.CreateNodeData(); // optional
-            RenderEdges(vm.Edges);
-            RenderNodes(vm.NodesVm);
-        }
-    }
-    void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
-    }
-
-    static void Launch(string fileName)
-    {
-        Process.Start(new ProcessStartInfo
-        {
-            FileName = fileName,
-            UseShellExecute = true
-        });
-    }
-
-    void OnOpenHomepage(object? sender, RoutedEventArgs e)
-    {
-        Launch("https://github.com/chkr1011/DirectedGraphEditor");
-    }
-
-    void OnReportBug(object? sender, RoutedEventArgs e)
-    {
-        Launch("https://github.com/chkr1011/DirectedGraphEditor/issues/new");
-    }
-
-    void OnRequestFeature(object? sender, RoutedEventArgs e)
-    {
-        Launch("https://github.com/chkr1011/DirectedGraphEditor/issues/new");
-    }
-
-    void OpenUrlFromButtonContent(object? sender, RoutedEventArgs e)
-    {
-        Launch((sender as Button)?.Content as string ?? string.Empty);
-    }
-
-    static string ReadEmbeddedMarkdown()
-    {
-        var assembly = Assembly.GetExecutingAssembly();
-        using var stream = assembly.GetManifestResourceStream("DirectedGraphEditor.Pages.Info.Readme.md");
-
-        if (stream == null)
-        {
-            return string.Empty;
-        }
-
-        using var reader = new StreamReader(stream);
-        return reader.ReadToEnd();
-    }
-
-    private void RenderNodes(IEnumerable<GraphNodeViewModel> nodes)
-    {
-        //GraphCanvas.Children.Clear();
-        inputSlotEllipses.Clear();
-
-        foreach (var node in nodes)
-        {
-            DrawNode(node);
-        }
-    }
-
-    private void RenderEdges(IEnumerable<GraphEdgeViewModel> edgeViewModels)
-    {
-        foreach (var edge in edgeViewModels)
-        {
-            var line = new Line
-            {
-                Stroke = Brushes.Yellow,
-                StrokeThickness = 2
-            };
-
-            line.StartPoint = edge.StartPoint;
-            line.EndPoint = edge.EndPoint;
-            line.Tag = edge;
-
-            GraphCanvas.Children.Add(line);
-        }
-    }
-
-    private void UpdateEdgeShapes()
-    {
-        foreach (var line in GraphCanvas.Children.OfType<Line>())
-        {
-            if (line.Tag is GraphEdgeViewModel vm)
-            {
-                line.StartPoint = vm.StartPoint;
-                line.EndPoint = vm.EndPoint;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Render a node, with text and slots.
-    /// </summary>
-    /// <param name="gnvm"></param>
-    private void DrawNode(GraphNodeViewModel gnvm)
-    {
-
-        var border = new Border
-        {
-            Width = 120,
-            Height = 60,
-            Background = Brushes.DarkSlateGray,
-            BorderBrush = Brushes.White,
-            BorderThickness = new Thickness(2),
-            CornerRadius = new CornerRadius(5),
-            Child = new TextBlock
-            {
-                Text = gnvm.Node.Name,
-                Foreground = Brushes.White,
-                FontSize = 14,
-                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
-                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
-            }
-        };
-
-        var nodeContainer = new Canvas
-        {
-            Width = 120,
-            Height = 60,
-            DataContext = gnvm
-        };
-
-        Canvas.SetLeft(nodeContainer, gnvm.X);
-        Canvas.SetTop(nodeContainer, gnvm.Y);
-
-        // Add the border into the container
-        nodeContainer.Children.Add(border);
-
-        // input slots
-        for (int i = 0; i < gnvm.Node.Inputs.Count; i++)
-        {
-            var slot = gnvm.Node.Inputs[i];
-            var ell = CreateSlotEllipse(slot, -4, 8 + i * 12);
-            nodeContainer.Children.Add(ell);
-        }
-
-        // output slots
-        for (int i = 0; i < gnvm.Node.Outputs.Count; i++)
-        {
-            var slot = gnvm.Node.Outputs[i];
-            var ell = CreateSlotEllipse(slot, 120 - 6, 8 + i * 12);
-            ell.PointerPressed += OnCanvasPointerPressed;
-            nodeContainer.Children.Add(ell);
-        }
-
-        // Add the fully populated container to the main canvas
-        GraphCanvas.Children.Add(nodeContainer);
-
-        // Keep track of it so dragging can reposition it
-        nodeContainers[gnvm] = nodeContainer;
-    }
-
-    private Ellipse CreateSlotEllipse(GraphSlot slot, double x, double y)
-    {
-        var ellipse = new Ellipse
-        {
-            Width = 10,
-            Height = 10,
-            Fill = slot.Direction == GraphSlotDirection.Input
-                                   ? Brushes.LightBlue
-                                   : Brushes.LightGreen,
-            Stroke = Brushes.Black,
-            StrokeThickness = 1,
-            Tag = slot
-        };
-        Canvas.SetLeft(ellipse, x);
-        Canvas.SetTop(ellipse, y);
-        ToolTip.SetTip(ellipse, slot.Id);
-        return ellipse;
-    }
-
-    private void DrawEdge(GraphEdgeViewModel edge)
-    {
-        var line = new Line
-        {
-            Stroke = Brushes.Yellow,
-            StrokeThickness = 2,
-            StartPoint = edge.StartPoint,
-            EndPoint = edge.EndPoint,
-            Tag = edge
-        };
-        GraphCanvas.Children.Add(line);
-    }
-
-    ////public void SelectEdgeAtSlot(GraphSlot slot)
-    ////{
-    ////    if (!_edgesBySlot.TryGetValue(slot, out var list) || list.Count == 0)
-    ////        return;
-
-    ////    if (_activeSlot != slot)
-    ////    {
-    ////        _activeSlot = slot;
-    ////        _selectedEdgeIndex = 0;
-    ////    }
-    ////    else
-    ////    {
-    ////        _selectedEdgeIndex = (_selectedEdgeIndex + 1) % list.Count;
-    ////    }
-
-    ////    foreach (var e in Edges)
-    ////        e.IsHighlighted = false;
-    ////    list[_selectedEdgeIndex].IsHighlighted = true;
-    ////}
-
-    ////private void OnSlotClicked(GraphSlot slot, PointerPressedEventArgs e)
-    ////{
-    ////    if (DataContext is not EditorPageViewModel vm) return;
-    ////    vm.SelectEdgeAtSlot(slot);
-    ////}
-
-    private void OnCanvasPointerPressed(object? s, PointerPressedEventArgs e)
-    {
-        var pt = e.GetPosition(GraphCanvas);
-
-        // 1) Rubber-band start: if clicked an outgoing slot ellipse
-        if (e.Source is Ellipse slotEllipse 
-            && slotEllipse.Tag is GraphSlot slot
-            && slot.MyNode == (slotEllipse.DataContext as GraphNodeViewModel)?.Node
-            && slot.Direction == GraphSlotDirection.Output )
-        {
-            tempStartNode = (GraphNodeViewModel)slotEllipse.DataContext!;
-            tempStartOutputIndex = tempStartNode.Node.Outputs.IndexOf(slot);
-
-            //tempStartNode = slotOwner;
-            //tempStartPoint = pt;    // center of the ellipse in GraphCanvas coords
-            var center = slotEllipse.TranslatePoint(new Point(5, 5), GraphCanvas) ?? e.GetPosition(GraphCanvas);
-
-            tempLine = new Line
-            {
-                Stroke = Brushes.Yellow,
-                StrokeThickness = 2,
-                StartPoint = center,
-                EndPoint = center
-            };
-
-            GraphCanvas.Children.Add(tempLine);
-            e.Handled = true;
-            return;
-        }
-
-        // 2) Node-drag start: if clicked the node border
-        if (e.Source is Border hitControl
-            && hitControl.DataContext is GraphNodeViewModel nodeVm)
-        {
-            draggedNode = nodeVm;
-            dragOffset = new Point(pt.X - nodeVm.X, pt.Y - nodeVm.Y);
-            GraphCanvas.CapturePointer(e.Pointer);
-            e.Handled = true;
-        }
-
-        // 2) Node-drag start: if clicked the node border
-        if (e.Source is TextBlock hitControl2 
-            && hitControl2.DataContext is GraphNodeViewModel nodeVm2)
-        {
-            draggedNode = nodeVm2;
-            dragOffset = new Point(pt.X - nodeVm2.X, pt.Y - nodeVm2.Y);
-            GraphCanvas.CapturePointer(e.Pointer);
-            e.Handled = true;
-        }
-    }
+    // ─── Canvas event hooks ───────────────────────────────────────
+    private void OnCanvasPointerPressed(object? sender, PointerPressedEventArgs e)
+        => adapter?.HandleCanvasPointerPressed(e);
 
     private void OnCanvasPointerMoved(object? sender, PointerEventArgs e)
-    {
-        // While active rubber-band, if over a node, then preview the nearest Input slot
-        if (tempLine != null)
-        {
-            var pt = e.GetPosition(GraphCanvas);
-            var epvm = DataContext as EditorPageViewModel;
-            var target = epvm?.NodesVm.FirstOrDefault(n =>
-                Math.Abs(n.X - pt.X) < 60 && Math.Abs(n.Y - pt.Y) < 30);
-
-            if (target != null && target.Node.Inputs.Count > 0)
-            {
-                var localY = pt.Y - target.Y;
-                var idx = (int)Math.Round((localY - (RowStartY + 5)) / RowPitch);
-                idx = Clamp(idx, 0, target.Node.Inputs.Count - 1);
-
-                // input center: x = -4 + EllW/2, y = RowStartY + idx*RowPitch + EllH/2
-                var end = new Point(
-                    target.X + (-4) + 5,
-                    target.Y + (RowStartY + idx * RowPitch) + 5);
-                tempLine.EndPoint = end;
-            }
-            else
-            {
-                tempLine.EndPoint = pt;
-            }
-            return;
-        }
-
-        // B) Node-drag update
-        if (draggedNode != null &&
-            e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
-        {
-            var pt = e.GetPosition(GraphCanvas);
-            draggedNode.X = pt.X - dragOffset.X;
-            draggedNode.Y = pt.Y - dragOffset.Y;
-
-            // update the nodecontainers as well:
-            if (nodeContainers.TryGetValue(draggedNode, out var container))
-            {
-                Canvas.SetLeft(container, draggedNode.X);
-                Canvas.SetTop(container, draggedNode.Y);
-            }
-
-            UpdateEdgeShapes();
-        }
-    }
-
-    private static int Clamp(int v, int min, int max) => v < min ? min : (v > max ? max : v);
-
-    private const double RowStartY = 8;
-    private const double RowPitch = 12;
+        => adapter?.HandleCanvasPointerMoved(e);
 
     private void OnCanvasPointerReleased(object? sender, PointerReleasedEventArgs e)
+        => adapter?.HandleCanvasPointerReleased(e);
+
+    private void OnLoaded(object? sender, RoutedEventArgs e)
+            => adapter?.HandleCanvasLoaded(e);
+
+
+    private async void OnOpenGraph(object? sender, RoutedEventArgs e)
     {
-        var pt = e.GetPosition(GraphCanvas);
+        string? path = await ShowOpenDialogAsync();
+        if (path == null) return;
 
-        // -- Finish rubber-band
-        if (tempLine != null)
+        if (DataContext is EditorPageViewModel vm)
         {
-            GraphCanvas.Children.Remove(tempLine);
-
-            if (tempStartNode != null
-                && DataContext is EditorPageViewModel epvm)
-            {
-                var target = epvm.NodesVm.FirstOrDefault(n =>
-                        Math.Abs(n.X - pt.X) < 60 
-                     && Math.Abs(n.Y - pt.Y) < 30);
-
-                if (target != null && target != tempStartNode
-                    && target.Node.Inputs.Count > 0
-                    && tempStartOutputIndex >= 0 )
-                {
-                    // estimate nearest input slot row by Y
-                    var localY = pt.Y - target.Y;
-                    var idx = (int)Math.Round((localY - (RowStartY + 5)) / RowPitch);
-                    var targetInputIndex = Clamp(idx, 0, target.Node.Inputs.Count - 1);
-
-                    var newEdge = new GraphEdgeViewModel(
-                        tempStartNode, tempStartOutputIndex, 
-                        target, targetInputIndex);
-                    epvm.Edges.Add(newEdge);
-                    DrawEdge(newEdge);
-                    UpdateEdgeShapes();
-                }
-            }
-
-            tempLine = null;
-            tempStartNode = null;
-            tempStartOutputIndex = -1;
-
-            e.Handled = true;
-            return;
-        }
-
-        // B: node-drag finish
-        if ( draggedNode != null )
-        {
-            draggedNode = null;
-            GraphCanvas.ReleasePointerCapture(e.Pointer);
-            e.Handled = true;
-        }
-
-    }
-
-    private void OnNodeBorderPressed(object? sender, PointerPressedEventArgs e)
-    {
-        if (sender is Border border && border.DataContext is GraphNodeViewModel nodeVm)
-        {
-            Console.WriteLine($"Clicked node: {nodeVm.Name}");
-            e.Handled = true;
+            vm.OpenGraph(path);
         }
     }
 
-    private void OnNodePointerPressed(object? sender, PointerPressedEventArgs e)
+    private async void OnSaveGraph(object? sender, RoutedEventArgs e)
     {
-        if (sender is Control ctrl && ctrl.DataContext is GraphNodeViewModel graphVm)
-        {
-            Console.WriteLine($"Clicked node: {graphVm.Node.Name}");
-        }
+        if (adapter != null)
+            await adapter.SaveGraphUsingDialogAsync();
     }
 
+    private async void OnSaveGraphAs(object? sender, RoutedEventArgs e)
+    {
+        if (adapter != null)
+            await adapter.SaveGraphUsingDialogAsync(forceNewFile: true);
+    }
 
+    private async Task<string?> ShowOpenDialogAsync()
+    {
+        var top = TopLevel.GetTopLevel(this);
+        if (top?.StorageProvider == null) return null;
+
+        var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Open Graph",
+            AllowMultiple = false,
+            FileTypeFilter = new[] { new FilePickerFileType("DirectedGraphMarkup") { Patterns = new[] { "*.dgml" } } }
+        });
+
+        return files.Count == 1 ? files[0].Path.LocalPath : null;
+    }
 
 }
+
+

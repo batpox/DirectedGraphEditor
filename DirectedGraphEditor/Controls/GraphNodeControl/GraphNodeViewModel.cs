@@ -1,19 +1,19 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using DirectedGraphCore.DirectedGraph;
+using DirectedGraphCore.Models;
 using System.Collections.Generic;
 
 namespace DirectedGraphEditor.Controls.GraphNodeControl;
 
 public sealed class GraphNodeViewModel : ObservableObject
 {
-    private double _x;
-    private double _y;
+    private float _x;
+    private float _y;
 
     public GraphNode Node { get; }
 
     public GraphNodeViewModel(GraphNode node)
     {
-        Node = node;
+        Node = node; // reference the model node
         _x = node.Position.X;
         _y = node.Position.Y;
 
@@ -28,14 +28,14 @@ public sealed class GraphNodeViewModel : ObservableObject
     }
 
     // X coordinate (binds to Canvas.Left, etc.)
-    public double X
+    public float X
     {
         get => _x;
         set { if (SetProperty(ref _x, value)) Node.Position.X = value; }
     }
 
     // Y coordinate (binds to Canvas.Top, etc.)
-    public double Y
+    public float Y
     {
         get => _y;
         set { if (SetProperty(ref _y, value)) Node.Position.Y = value; }
