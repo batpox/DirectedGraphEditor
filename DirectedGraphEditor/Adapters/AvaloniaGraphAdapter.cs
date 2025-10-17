@@ -6,6 +6,7 @@ using Avalonia.VisualTree;
 using DirectedGraphCore.Commands;
 using DirectedGraphCore.Controllers;
 using DirectedGraphCore.Models;
+using DirectedGraphEditor.Commands;
 using DirectedGraphEditor.Controls.GraphNodeControl;
 using System;
 using System.Collections.Generic;
@@ -58,7 +59,9 @@ namespace DirectedGraphEditor.Adapters
 
         public void UnregisterView(GraphNode node)
         {
-            if (!nodeViews.TryGetValue(node.Id, out var view)) return;
+            if (!nodeViews.TryGetValue(node.Id, out var view)) 
+                return;
+
             view.PinDown -= OnPinDown;
             view.PinUp -= OnPinUp;
             view.PinDrag -= OnPinDrag;
@@ -80,8 +83,7 @@ namespace DirectedGraphEditor.Adapters
         public void UpdateEdgeDrag(Point currentCanvasPt)
         {
             if (rubber is null) return;
-            rubber.X2 = currentCanvasPt.X;
-            rubber.Y2 = currentCanvasPt.Y;
+            rubber.EndPoint = currentCanvasPt;
         }
 
         /// <summary>Complete over a target node (the control determines which node we’re over).</summary>
@@ -94,10 +96,16 @@ namespace DirectedGraphEditor.Adapters
 
             // Convert drop to node space
             var view = nodeViews[targetNode.Id];
-            var dropInNode = dropCanvasPt.TransformToVisual(view)!.Value;
+
+            var dropInNode = ToLocal(canvas, view, dropCanvasPt); 
+            if (dropInNode is null)
+            { 
+                CancelEdgeDrag(); 
+                return; 
+            }
 
             // Resolve or insert pin at the drop Y
-            var (resolvedPin, created, insertIndex) = ResolvePinForDrop(targetNode, neededDir, dropInNode.Y);
+            var (resolvedPin, created, insertIndex) = ResolvePinForDrop(targetNode, neededDir, dropInNode.Value.Y);
 
             // Build commands (insert pin if created) + add edge
             InsertPinCommand? insertCmd = null;
@@ -120,6 +128,12 @@ namespace DirectedGraphEditor.Adapters
             dragSourcePin = null;
             RemoveRubber();
         }
+
+        // ─────────────────────────────────────────────────────────
+        // Helpers
+        // ─────────────────────────────────────────────────────────
+        private static Point? ToLocal(Visual from, Visual to, Point p) => from.TranslatePoint(p, to);
+        private static Point? ToCanvas(Visual from, Canvas c, Point p) => from.TranslatePoint(p, c);
 
         // ─────────────────────────────────────────────────────────
         // Control event hooks (if GraphNodeControl exposes them)
@@ -148,8 +162,8 @@ namespace DirectedGraphEditor.Adapters
             // Decide side by comparing X: if cursor is left half → input side; else output side.
             // (Alternatively expose which side from GraphNodeControl on hover.)
             var view = nodeViews[target.Id];
-            var local = pt.TransformToVisual(view)!.Value;
-            var targetIsInputSide = local.X < view.Bounds.Width / 2.0;
+            var local = ToLocal(canvas, view, pt);
+            var targetIsInputSide = local.Value.X < view.Bounds.Width / 2.0;
 
             CompleteEdgeDragOverNode(target, pt, targetIsInputSide);
         }
@@ -231,15 +245,15 @@ namespace DirectedGraphEditor.Adapters
                 StrokeThickness = 2,
                 IsHitTestVisible = false
             };
-            Canvas.SetZIndex(rubber, int.MaxValue);
+            rubber.SetValue(Panel.ZIndexProperty, int.MaxValue);
             canvas.Children.Add(rubber);
         }
 
         private void UpdateRubber(Point start, Point end)
         {
             if (rubber is null) return;
-            rubber.X1 = start.X; rubber.Y1 = start.Y;
-            rubber.X2 = end.X; rubber.Y2 = end.Y;
+            rubber.StartPoint = start;
+            rubber.EndPoint = end;
         }
 
         private void RemoveRubber()
@@ -260,7 +274,7 @@ namespace DirectedGraphEditor.Adapters
             foreach (var kv in nodeViews)
             {
                 var view = kv.Value;
-                var local = canvasPoint.TransformToVisual(view);
+                var local = ToLocal(canvas, view, canvasPoint);
                 if (local is null) continue;
                 if (new Rect(view.Bounds.Size).Contains(local.Value))
                     return controller.Model.Nodes[kv.Key];
@@ -276,18 +290,4 @@ namespace DirectedGraphEditor.Adapters
         }
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // Minimal event args if your GraphNodeControl can raise them
-    // (Put these alongside the control if you prefer)
-    // ─────────────────────────────────────────────────────────────
-    public sealed class PinEventArgs : EventArgs
-    {
-        public GraphNode Node { get; }
-        public NodePin Pin { get; }
-        public Point? CanvasPoint { get; }  // if control computes it, great
-        public Point LocalPoint { get; }    // fallback (in control space)
-
-        public PinEventArgs(GraphNode node, NodePin pin, Point localPoint, Point? canvasPoint = null)
-        { Node = node; Pin = pin; LocalPoint = localPoint; CanvasPoint = canvasPoint; }
-    }
 }

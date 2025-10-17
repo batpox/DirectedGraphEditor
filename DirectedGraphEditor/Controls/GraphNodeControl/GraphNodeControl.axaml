@@ -26,6 +26,7 @@
                      Width="10" Height="10"
                      Tag="{Binding}"
                      PointerPressed="OnPinPointerPressed"
+                     PointerMoved="OnPinPointerMoved"
                      PointerReleased="OnPinPointerReleased"/>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
@@ -75,6 +76,7 @@
                      Width="10" Height="10"
                      Tag="{Binding}"
                      PointerPressed="OnPinPointerPressed"
+                     PointerMoved="OnPinPointerMoved"
                      PointerReleased="OnPinPointerReleased"/>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
