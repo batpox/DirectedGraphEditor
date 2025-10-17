@@ -42,6 +42,8 @@
 
   <Application.Styles>
     <FluentTheme />
+
+    <StyleInclude Source="avares://DirectedGraphEditor/Styles/GraphNodeControlStyles.axaml"/>
     <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
 
     <StyleInclude Source="/Styles/GridSplitter.axaml" />

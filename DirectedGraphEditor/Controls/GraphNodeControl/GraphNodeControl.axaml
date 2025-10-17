@@ -1,34 +1,112 @@
-
-
 <UserControl
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="clr-namespace:DirectedGraphEditor.Controls.GraphNodeControl"
+    xmlns:panels="clr-namespace:DirectedGraphEditor.Controls.Panels"   
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-    x:Class="DirectedGraphEditor.Controls.GraphNodeControl.GraphNodeControl"
-    x:DataType="vm:GraphNodeViewModel">
+    xmlns:core="clr-namespace:DirectedGraphCore.Models;assembly=DirectedGraphCore"
+    x:DataType="vm:GraphNodeViewModel"
+    x:Class="DirectedGraphEditor.Controls.GraphNodeControl.GraphNodeControl">
 
-    <Border Width="120" Height="60"
-              Background="#444"
-              BorderBrush="White"
-              BorderThickness="1"
-              Canvas.Left="{Binding X}"
-              Canvas.Top="{Binding Y}"
-              PointerPressed="OnNodeBorderPressed">
 
-      <StackPanel>
+    <Grid Width="100" Height="55" ColumnDefinitions="Auto,Auto,Auto">
+
+      <!-- Left/Source/input pins -->
+      <ItemsControl Grid.Column="0" Items="{Binding Inputs}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <panels:EvenlySpacedPanel/>
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="core:NodePin">
+            <Ellipse Classes="pin"
+                     Width="10" Height="10"
+                     Tag="{Binding}"
+                     PointerPressed="OnPinPointerPressed"
+                     PointerReleased="OnPinPointerReleased"/>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <!--
+      <Ellipse x:Name="TargetPin"
+               Grid.Column="0"
+               VerticalAlignment="Center" HorizontalAlignment="Right"
+               Width="10" Height="10"
+               Margin="0,0,0,0"
+               Fill="LightGray" Stroke="Black"
+               ToolTip.Tip="Target Pin" >
         
-      <TextBlock Text="{Binding Node.Name}"
-                  HorizontalAlignment="Center"
-                  VerticalAlignment="Center"
-                  Foreground="White"/>
-      </StackPanel>
+      </Ellipse>
+      -->
 
-    </Border>
+      <!-- Body of the node: middle -->
+      <Border  x:Name="NodeBody"
+                Classes="nodeBody"
+            Grid.Column="1"
+               Width="80" Height="50"
+        CornerRadius="8"
+        Background="#4444"
+        BorderBrush="Aqua"
+        BorderThickness="2"
+        PointerPressed="OnNodeBorderPressed">
+
+        <TextBlock Text="{Binding Name}"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Top"
+                Foreground="White">
+        </TextBlock>
+      </Border>
+
+
+      <!-- Right Source (output) pin: right side -->
+
+      <ItemsControl Grid.Column="2" Items="{Binding Outputs}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <panels:EvenlySpacedPanel/>
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="core:NodePin">
+            <Ellipse Classes="pin"
+                     Width="10" Height="10"
+                     Tag="{Binding}"
+                     PointerPressed="OnPinPointerPressed"
+                     PointerReleased="OnPinPointerReleased"/>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <!--
+      <Ellipse x:Name="SourcePin"
+               Grid.Column="2"
+               Width="10" Height="10"
+               HorizontalAlignment="Left" VerticalAlignment="Center"
+               Margin="0,0,0,0"
+               Fill="LightGray" Stroke="Black"
+               ToolTip.Tip="Source Pin" >
+               
+      </Ellipse>
+      -->
+
+    </Grid>
+
 
 </UserControl>
+
+
+
+<!--
+    mc:Ignorable="d" d:DesignWidth="200" d:DesignHeight="250"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="clr-namespace:DirectedGraphEditor.Controls.GraphNodeControl.GraphNodeControl"
+  xmlns:vm="clr-namespace:DirectedGraphEditor.Controls.GraphNodeControl.GraphNodeControl"
+  x:DataType="vm:GraphNodeViewModel"
+
+-->
 
 
 

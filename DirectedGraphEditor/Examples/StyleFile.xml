@@ -11,9 +11,9 @@
       <Fill>#444</Fill>
       <BorderBrush>White</BorderBrush>
       <BorderThickness>1</BorderThickness>
-      <SlotRadius>6</SlotRadius>
-      <SlotOffsetX>10</SlotOffsetX>
-      <SlotSpacingY>20</SlotSpacingY>
+      <PinRadius>6</PinRadius>
+      <PinOffsetX>10</PinOffsetX>
+      <PinSpacingY>20</PinSpacingY>
     </Style>
     <Style name="Warning">
       <Fill>#663300</Fill>

@@ -71,22 +71,22 @@ public static class DgmlSerializer
         writer.WriteStartElement("Nodes");
         foreach (var node in graph.Nodes.Values)
         {
-            // Here we could look at node.Inputs/Outputs slots if you want per-slot geometry,
+            // Here we could look at node.Inputs/Outputs pins if you want per-pin geometry,
             // but for now treat node itself as having layout.
-            var pos = node.Inputs.FirstOrDefault()?.Position ?? new GraphPosition(0, 0, 0);
+            ////var pos = node.Inputs.FirstOrDefault()?.Position ?? new GraphPosition(0, 0, 0);
             var size = node.Inputs.FirstOrDefault()?.Size ?? new GraphSize(0, 0, 0);
 
             writer.WriteStartElement("Node");
             writer.WriteAttributeString("Id", node.Id);
             writer.WriteAttributeString("Layout", "Fixed");
-            writer.WriteAttributeString("Position", $"{pos.X},{pos.Y},{pos.Z}");
+            writer.WriteAttributeString("Position", $"{node.Position.X},{node.Position.Y},{node.Position.Z}");
             writer.WriteAttributeString("Size", $"{size.Width},{size.Height},{size.Depth}");
 
-            foreach (var slot in node.Inputs.Concat(node.Outputs))
+            foreach (var pin in node.Inputs.Concat(node.Outputs))
             {
-                writer.WriteStartElement("Slot");
-                writer.WriteAttributeString("Id", slot.Id);
-                writer.WriteAttributeString("Direction", slot.Direction.ToString());
+                writer.WriteStartElement("Pin");
+                writer.WriteAttributeString("Id", pin.Id);
+                writer.WriteAttributeString("Direction", pin.Direction.ToString());
                 writer.WriteEndElement();
             }
 
@@ -136,9 +136,9 @@ public static class DgmlSerializer
                         float.TryParse(parts[2], out var w) &&
                         float.TryParse(parts[3], out var h))
                     {
-                        gNode.Inputs.Add(new GraphSlot(0, GraphSlotDirection.Input, gNode)
+                        gNode.Inputs.Add(new NodePin(0, EnumNodePinDirection.Input, gNode)
                         {
-                            Position = new GraphPosition(x, y, 0),
+                            ////Position = new GraphPosition(x, y, 0),
                             Size = new GraphSize(w, h, 0)
                         });
                     }
@@ -210,41 +210,41 @@ public static class DgmlSerializer
                             parts.Length > 2 ? double.Parse(parts[2]) : 0);
                     }
 
-                    // Slots
-                    var slotElems = node.Elements(ns + "Slot").ToList();
-                    if (slotElems.Count > 0)
+                    // Pins
+                    var pinElems = node.Elements(ns + "Pin").ToList();
+                    if (pinElems.Count > 0)
                     {
-                        foreach (var s in slotElems)
+                        foreach (var s in pinElems)
                         {
                             var indexString = s.Attribute("Index")?.Value ?? "0";
                             int index = int.Parse(indexString);
                             var dirStr = s.Attribute("Direction")?.Value ?? "Input";
                             var dir = dirStr.Equals("Output", StringComparison.OrdinalIgnoreCase)
-                                ? GraphSlotDirection.Output
-                                : GraphSlotDirection.Input;
-                            if (dir == GraphSlotDirection.Input)
-                                gnode.Inputs.Add(new GraphSlot(index, dir, gnode));
+                                ? EnumNodePinDirection.Output
+                                : EnumNodePinDirection.Input;
+                            if (dir == EnumNodePinDirection.Input)
+                                gnode.Inputs.Add(new NodePin(index, dir, gnode));
                             else
-                                gnode.Outputs.Add(new GraphSlot(index, dir, gnode));
+                                gnode.Outputs.Add(new NodePin(index, dir, gnode));
                         }
                     }
                 }
             }
 
-            // Add slots if missing
+            // Add pins if missing
             foreach (var node in graph.Nodes.Values)
             {
                 if (node.Inputs.Count == 0)
                 {
                     var incoming = graph.Edges.Count(e => e.Value.TargetNodeId == node.Id);
                     for (int ii = 0; ii < incoming; ii++)
-                        node.Inputs.Add(new GraphSlot(ii, GraphSlotDirection.Input, node));
+                        node.Inputs.Add(new NodePin(ii, EnumNodePinDirection.Input, node));
                 }
                 if (node.Outputs.Count == 0)
                 {
                     var outgoing = graph.Edges.Count(e => e.Value.SourceNodeId == node.Id);
                     for (int ii = 0; ii < outgoing; ii++)
-                        node.Outputs.Add(new GraphSlot(ii, GraphSlotDirection.Output, node));
+                        node.Outputs.Add(new NodePin(ii, EnumNodePinDirection.Output, node));
                 }
             }
         }

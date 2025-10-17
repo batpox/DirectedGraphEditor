@@ -47,7 +47,7 @@ namespace DirectedGraphCore.Styles
         public double Height { get; set; } = 60;
 
         [XmlElement]
-        public double SlotRadius { get; set; } = 6;
+        public double PinRadius { get; set; } = 6;
     }
 
     public class EdgeStyle

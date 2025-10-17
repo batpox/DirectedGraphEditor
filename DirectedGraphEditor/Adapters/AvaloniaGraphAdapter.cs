@@ -1,405 +1,293 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
-using Avalonia.Input;
-using Avalonia.Interactivity;
 using Avalonia.Media;
-using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
+using DirectedGraphCore.Commands;
 using DirectedGraphCore.Controllers;
 using DirectedGraphCore.Models;
 using DirectedGraphEditor.Controls.GraphNodeControl;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Numerics;
-using System.Threading.Tasks;
 
-namespace DirectedGraphEditor.Adapters;
-
-public class AvaloniaGraphAdapter : IDisposable
+namespace DirectedGraphEditor.Adapters
 {
-    private readonly GraphController controller;
-    private readonly Canvas canvas;
-    private bool disposed;
-
-    private GraphNode? dragTarget;
-    private Vector2 lastPointerPos;
-
-    public enum EditorMode { Select, AddNode, AddEdge }
-
-    private EditorMode currentMode = EditorMode.Select;
-
-    private bool isResetting;
-    private readonly List<GraphNode> pendingNodes = new();
-    private readonly List<GraphEdge> pendingEdges = new();
-
-
-    public AvaloniaGraphAdapter(GraphController controller, Canvas canvas)
+    public sealed class AvaloniaGraphAdapter
     {
-        this.controller = controller;
-        this.canvas = canvas;
+        private readonly GraphController controller;
+        private readonly CommandStack commands;
 
-        controller.NodeAdded += OnNodeAdded;
-        controller.NodeMoved += OnNodeMoved;
-        controller.SelectionChanged += OnSelectionChanged;
-        controller.EdgeAdded += OnEdgeAdded;
-        controller.EdgeRemoved += OnEdgeRemoved;
-        controller.SelectionChanged += OnSelectionChanged;
-        controller.NodeMoved += OnNodeMoved;
-        controller.GraphReset += OnGraphReset;
-        controller.GraphResetCompleted += OnGraphResetCompleted;
-    }
+        private Canvas? canvas;
 
-    /// <summary>A full reset of the canvas</summary>
-    private void OnGraphReset()
-    {
-        isResetting = true;
-        pendingNodes.Clear();
-        pendingEdges.Clear();
+        // NodeId -> its view (GraphNodeControl)
+        private readonly Dictionary<string, GraphNodeControl> nodeViews = new();
 
-        // 🧠 Avalonia 11 Canvas clear before new model is drawn
-        canvas.Children.Clear();
-    }
+        // Drag state
+        private GraphNode? dragSourceNode;
+        private NodePin? dragSourcePin;
+        private Line? rubber;
 
-    private void OnGraphResetCompleted()
-    {
-        isResetting = false;
+        // Snap constants
+        private const double PinRadiusPx = 5.0;  // Ellipse 10x10
+        private const double SnapDistance = PinRadiusPx * 4;  // two diameters
 
-        // Add everything collected during reset
-        foreach (var node in pendingNodes)
-            OnNodeAdded(node);
-        foreach (var edge in pendingEdges)
-            OnEdgeAdded(edge);
-
-        pendingNodes.Clear();
-        pendingEdges.Clear();
-    }
-
-    public void RenderAll()
-    {
-        canvas.Children.Clear();
-
-        // Draw edges first (behind nodes)
-        foreach (var edge in controller.Model.Edges.Values)
-            OnEdgeAdded(edge);
-
-        // Draw nodes
-        foreach (var node in controller.Model.Nodes.Values)
-            OnNodeAdded(node);
-    }
-
-    private void OnEdgeRemoved(GraphEdge edge)
-    {
-        // Find and remove the corresponding line
-        var line = canvas.Children
-            .OfType<Line>()
-            .FirstOrDefault(l => ReferenceEquals(l.DataContext, edge));
-
-        if (line != null)
-            canvas.Children.Remove(line);
-    }
-    private void OnEdgeAdded(GraphEdge edge)
-    {
-        // Look up source and target nodes
-        if (!controller.Model.Nodes.TryGetValue(edge.SourceNodeId, out var source)) 
-            return;
-        if (!controller.Model.Nodes.TryGetValue(edge.TargetNodeId, out var target)) 
-            return;
-
-        if (isResetting)
+        public AvaloniaGraphAdapter(GraphController controller, CommandStack commands)
         {
-            pendingEdges.Add(edge);
-            return;
+            this.controller = controller;
+            this.commands = commands;
         }
-        // Create a simple connecting line
-        var line = new Line
+
+        // ─────────────────────────────────────────────────────────
+        // Canvas / View registration
+        // ─────────────────────────────────────────────────────────
+        public void AttachCanvas(Canvas canvas)
         {
-            StartPoint = new Avalonia.Point(source.Position.X, source.Position.Y),
-            EndPoint = new Avalonia.Point(target.Position.X, target.Position.Y),
-            Stroke = Brushes.Gray,
-            StrokeThickness = 1.5,
-            DataContext = edge
-        };
+            this.canvas = canvas;
+        }
 
-        // Place behind node visuals
-        //Canvas.SetZIndex(line, 0);
-        canvas.Children.Add(line);
-    }
-
-    private void OnNodeAdded(GraphNode node)
-    {
-        var view = new GraphNodeControl { DataContext = node };
-        Canvas.SetLeft(view, node.Position.X);
-        Canvas.SetTop(view, node.Position.Y);
-
-        // Pointer events
-        view.PointerPressed += (_, e) =>
+        public void RegisterView(GraphNode node, GraphNodeControl view)
         {
-            if (e.GetCurrentPoint(view).Properties.IsLeftButtonPressed)
+            nodeViews[node.Id] = view;
+
+            // optional: hook control's events if you exposed them
+            view.PinDown += OnPinDown;
+            view.PinUp += OnPinUp;
+            view.PinDrag += OnPinDrag;
+        }
+
+        public void UnregisterView(GraphNode node)
+        {
+            if (!nodeViews.TryGetValue(node.Id, out var view)) return;
+            view.PinDown -= OnPinDown;
+            view.PinUp -= OnPinUp;
+            view.PinDrag -= OnPinDrag;
+            nodeViews.Remove(node.Id);
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // Public API if you prefer calling directly from the control
+        // ─────────────────────────────────────────────────────────
+        public void StartEdgeDrag(GraphNode node, NodePin pin, Point startCanvasPt)
+        {
+            dragSourceNode = node;
+            dragSourcePin = pin;
+
+            EnsureRubber();
+            UpdateRubber(startCanvasPt, startCanvasPt);
+        }
+
+        public void UpdateEdgeDrag(Point currentCanvasPt)
+        {
+            if (rubber is null) return;
+            rubber.X2 = currentCanvasPt.X;
+            rubber.Y2 = currentCanvasPt.Y;
+        }
+
+        /// <summary>Complete over a target node (the control determines which node we’re over).</summary>
+        public void CompleteEdgeDragOverNode(GraphNode targetNode, Point dropCanvasPt, bool targetIsInputSide)
+        {
+            if (dragSourceNode is null || dragSourcePin is null) { CancelEdgeDrag(); return; }
+
+            // Determine which direction is needed at the target end
+            var neededDir = targetIsInputSide ? EnumNodePinDirection.Input : EnumNodePinDirection.Output;
+
+            // Convert drop to node space
+            var view = nodeViews[targetNode.Id];
+            var dropInNode = dropCanvasPt.TransformToVisual(view)!.Value;
+
+            // Resolve or insert pin at the drop Y
+            var (resolvedPin, created, insertIndex) = ResolvePinForDrop(targetNode, neededDir, dropInNode.Y);
+
+            // Build commands (insert pin if created) + add edge
+            InsertPinCommand? insertCmd = null;
+            if (created)
+                insertCmd = new InsertPinCommand(targetNode, neededDir, insertIndex);
+
+            var addEdge = targetIsInputSide
+                ? new AddEdgeCommand(controller, dragSourceNode, dragSourcePin, targetNode, resolvedPin)
+                : new AddEdgeCommand(controller, targetNode, resolvedPin, dragSourceNode, dragSourcePin);
+
+            var composite = new ConnectWithAutoPinCommand(insertCmd, addEdge);
+            commands.Exec(composite);
+
+            CancelEdgeDrag();
+        }
+
+        public void CancelEdgeDrag()
+        {
+            dragSourceNode = null;
+            dragSourcePin = null;
+            RemoveRubber();
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // Control event hooks (if GraphNodeControl exposes them)
+        // ─────────────────────────────────────────────────────────
+        private void OnPinDown(object? sender, PinEventArgs e)
+        {
+            // e.CanvasPoint is the pin center in canvas space (ideal); if you don’t have it, compute below.
+            var startPt = e.CanvasPoint ?? ToCanvasPoint(sender as Visual, e.LocalPoint);
+            StartEdgeDrag(e.Node, e.Pin, startPt);
+        }
+
+        private void OnPinDrag(object? sender, PinEventArgs e)
+        {
+            var pt = e.CanvasPoint ?? ToCanvasPoint(sender as Visual, e.LocalPoint);
+            UpdateEdgeDrag(pt);
+        }
+
+        private void OnPinUp(object? sender, PinEventArgs e)
+        {
+            var pt = e.CanvasPoint ?? ToCanvasPoint(sender as Visual, e.LocalPoint);
+
+            // Figure out which node we’re over (hit-test). If none, cancel.
+            var target = HitTestNode(pt);
+            if (target is null) { CancelEdgeDrag(); return; }
+
+            // Decide side by comparing X: if cursor is left half → input side; else output side.
+            // (Alternatively expose which side from GraphNodeControl on hover.)
+            var view = nodeViews[target.Id];
+            var local = pt.TransformToVisual(view)!.Value;
+            var targetIsInputSide = local.X < view.Bounds.Width / 2.0;
+
+            CompleteEdgeDragOverNode(target, pt, targetIsInputSide);
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // Pin resolution (snap or insert)
+        // ─────────────────────────────────────────────────────────
+        private (NodePin pin, bool created, int insertIndex) ResolvePinForDrop(
+            GraphNode node,
+            EnumNodePinDirection dir,
+            double dropYNodeSpace)
+        {
+            var view = nodeViews[node.Id];
+            var height = Math.Max(1.0, view.Bounds.Height);
+            var pinList = dir == EnumNodePinDirection.Input ? node.Inputs : node.Outputs;
+            var centers = GetPinCenters(view, dir);  // (pin,y) sorted by y
+
+            // Snap?
+            if (centers.Count > 0)
             {
-                controller.SelectNode(node, multiSelect: e.KeyModifiers.HasFlag(KeyModifiers.Control));
-                dragTarget = node;
-                lastPointerPos = e.GetPosition(canvas).ToVector2();
+                var nearest = centers
+                    .Select(t => (t.pin, dy: Math.Abs(t.y - dropYNodeSpace)))
+                    .OrderBy(t => t.dy)
+                    .First();
 
-                // capture pointer explicitly to continue receiving events
-                e.Pointer.Capture(view);
+                if (nearest.dy <= SnapDistance)
+                    return (nearest.pin, false, nearest.pin.Index);
             }
-        };
 
-        view.PointerReleased += (_, e) =>
-        {
-            dragTarget = null;
-
-            // release pointer capture
-            e.Pointer.Capture(null);
-        };
-
-        view.PointerMoved += (_, e) =>
-        {
-            if (dragTarget != null && e.GetCurrentPoint(canvas).Properties.IsLeftButtonPressed)
+            // Insert by even-layout math
+            var count = pinList.Count;
+            int index;
+            if (count == 0)
             {
-                var newPosition = e.GetPosition(canvas).ToVector2();
-
-                Vector2 delta = newPosition - lastPointerPos;
-                controller.MoveSelectedBy(delta);
-                lastPointerPos = newPosition;
+                index = 0;
             }
-        };
-
-        canvas.Children.Add(view);
-    }
-
-    private void OnNodeRemoved(GraphNode node)
-    {
-        // 1. Remove any edges connected to this node
-        var connectedEdges = controller.Model.Edges.Values
-            .Where(e => e.SourceNodeId == node.Id || e.TargetNodeId == node.Id)
-            .ToList();
-
-        foreach (var edge in connectedEdges)
-        {
-            // Remove edge from model first
-            controller.Model.Edges.Remove(edge.Id);
-
-            // Remove its visual line (if any)
-            var line = canvas.Children
-                .OfType<Line>()
-                .FirstOrDefault(l => ReferenceEquals(l.DataContext, edge));
-
-            if (line != null)
-                canvas.Children.Remove(line);
-        }
-
-        // 2. Remove the node’s visual itself
-        var nodeView = canvas.Children
-            .OfType<GraphNodeControl>()
-            .FirstOrDefault(v => ReferenceEquals(v.DataContext, node));
-
-        if (nodeView != null)
-            canvas.Children.Remove(nodeView);
-    }
-    private void OnNodeMoved(GraphNode node)
-    {
-        var nodeView = canvas.Children.OfType<GraphNodeControl>()
-            .FirstOrDefault(v => ReferenceEquals(v.DataContext, node));
-        if (nodeView != null)
-        {
-            // Set directly, only if moved
-            double left = Canvas.GetLeft(nodeView);
-            double top = Canvas.GetTop(nodeView);
-
-            if (left != node.Position.X || top != node.Position.Y)
+            else
             {
-                Canvas.SetLeft(nodeView, node.Position.X);
-                Canvas.SetTop(nodeView, node.Position.Y);
+                var frac = Math.Clamp(dropYNodeSpace / height, 0.0, 1.0);
+                var slot = frac * (count + 1);          // 0..count+1
+                var k = (int)Math.Round(slot);       // nearest slot #
+                index = Math.Clamp(k - 1, 0, count); // 0..count
             }
+
+            var created = dir == EnumNodePinDirection.Input
+                ? node.InsertInput(index)
+                : node.InsertOutput(index);
+
+            return (created, true, index);
         }
 
-        // Find all edges connected to this node
-        var connectedEdges = controller.Model.Edges.Values
-            .Where(e => e.SourceNodeId == node.Id || e.TargetNodeId == node.Id)
-            .ToList();
-
-        foreach (var edge in connectedEdges)
+        private static List<(NodePin pin, double y)> GetPinCenters(GraphNodeControl view, EnumNodePinDirection dir)
         {
-            var line = canvas.Children
-                .OfType<Line>()
-                .FirstOrDefault(l => ReferenceEquals(l.DataContext, edge));
-
-            if (line == null) continue;
-
-            if (controller.Model.Nodes.TryGetValue(edge.SourceNodeId, out var src) &&
-                controller.Model.Nodes.TryGetValue(edge.TargetNodeId, out var dst))
+            var list = new List<(NodePin, double)>();
+            foreach (var e in view.GetVisualDescendants().OfType<Ellipse>())
             {
-                line.StartPoint = new Avalonia.Point(src.Position.X, src.Position.Y);
-                line.EndPoint = new Avalonia.Point(dst.Position.X, dst.Position.Y);
+                if (!e.Classes.Contains("pin")) continue;
+                if (e.Tag is not NodePin pin) continue;
+                if (pin.Direction != dir) continue;
+
+                var center = e.TranslatePoint(new Point(e.Bounds.Width / 2, e.Bounds.Height / 2), view);
+                if (center is null) continue;
+                list.Add((pin, center.Value.Y));
             }
+            list.Sort((a, b) => a.y.CompareTo(b.y));
+            return list;
         }
 
-    }
-
-    private void OnSelectionChanged()
-    {
-        foreach (var view in canvas.Children.OfType<GraphNodeControl>())
+        // ─────────────────────────────────────────────────────────
+        // Rubber-band helpers
+        // ─────────────────────────────────────────────────────────
+        private void EnsureRubber()
         {
-            var node = (GraphNode)view.DataContext;
-            view.IsSelected = controller.SelectedNodes.Contains(node);
-        }
-    }
-
-    // ─── IDisposable Implementation ────────────────────────
-    public void Dispose()
-    {
-        if (disposed) return;
-        disposed = true;
-
-        controller.NodeAdded -= OnNodeAdded;
-        controller.NodeRemoved -= OnNodeRemoved;
-        controller.EdgeAdded -= OnEdgeAdded;
-        controller.EdgeRemoved -= OnEdgeRemoved;
-        controller.SelectionChanged -= OnSelectionChanged;
-        controller.NodeMoved -= OnNodeMoved;
-    }
-
-    private static Control? FindGraphElement(object? source)
-    {
-        // Avalonia 11 pointer event sources implement IVisual
-        var visual = source as Visual;
-
-        while (visual != null)
-        {
-            // stop when we hit a node or an edge visual
-            if (visual is GraphNodeControl or Line)
-                return visual as Control;
-
-            visual = visual.GetVisualParent();
-        }
-
-        return null;
-    }
-
-    public void HandleCanvasPointerPressed(PointerPressedEventArgs e)
-    {
-        var hit = FindGraphElement(e.Source);
-        if (hit == null) {
-            Console.WriteLine("Clicked empty canvas.");
-            return;
-        }
-
-        switch (hit)
+            if (canvas is null) return;
+            if (rubber != null) return;
+            rubber = new Line
             {
-            case GraphNodeControl nodeControl:
-                // Handled in node control itself
-                return;
-            case Line line:
-                if (line.DataContext is GraphEdge edge)
-                {
-                    Console.WriteLine($"Clicked edge from {edge.SourceNodeId} to {edge.TargetNodeId}");
-                    // Optionally select the edge or show context menu
-                }
-                return;
-            default:
-                return;
+                Stroke = Brushes.Aqua,
+                StrokeThickness = 2,
+                IsHitTestVisible = false
+            };
+            Canvas.SetZIndex(rubber, int.MaxValue);
+            canvas.Children.Add(rubber);
         }
 
-        if (e.GetCurrentPoint(canvas).Properties.IsLeftButtonPressed)
+        private void UpdateRubber(Point start, Point end)
         {
-            var point = e.GetCurrentPoint(canvas);
-            if (!point.Properties.IsLeftButtonPressed)
-                return;
+            if (rubber is null) return;
+            rubber.X1 = start.X; rubber.Y1 = start.Y;
+            rubber.X2 = end.X; rubber.Y2 = end.Y;
+        }
 
-            var pos = e.GetPosition(canvas).ToVector2();
+        private void RemoveRubber()
+        {
+            if (canvas is null || rubber is null) return;
+            canvas.Children.Remove(rubber);
+            rubber = null;
+        }
 
-            switch (currentMode)
+        // ─────────────────────────────────────────────────────────
+        // Hit test and transforms
+        // ─────────────────────────────────────────────────────────
+        private GraphNode? HitTestNode(Point canvasPoint)
+        {
+            if (canvas is null) return null;
+
+            // Simple linear search; optimize if needed.
+            foreach (var kv in nodeViews)
             {
-                case EditorMode.AddNode:
-                    //controller.AddNode(new System.Drawing.PointF(pos.X, pos.Y));
-                    e.Handled = true;
-                    break;
-
-                case EditorMode.Select:
-
-
-                    break;
-                default:
-                    // Clicking empty canvas clears selection
-                    controller.ClearSelection();
-                    break;
+                var view = kv.Value;
+                var local = canvasPoint.TransformToVisual(view);
+                if (local is null) continue;
+                if (new Rect(view.Bounds.Size).Contains(local.Value))
+                    return controller.Model.Nodes[kv.Key];
             }
+            return null;
         }
-    }
 
-    public void HandleCanvasPointerMoved(PointerEventArgs e)
-    {
-        // optional: could be used for box-selection or preview
-    }
-
-    public void HandleCanvasPointerReleased(PointerReleasedEventArgs e)
-    {
-        // optional for future drag/box logic
-    }
-
-    public void HandleCanvasLoaded(RoutedEventArgs e)
-    {
-        RenderAll();
-    }
-
-    /// <summary>
-    /// Loads a graph from a DGML file using a file open dialog.
-    /// </summary>
-    /// <returns></returns>
-    public async Task LoadGraphUsingDialogAsync()
-    {
-        var top = TopLevel.GetTopLevel(canvas);
-        if (top?.StorageProvider == null) return;
-
-        var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        private Point ToCanvasPoint(Visual? from, Point local)
         {
-            Title = "Open Graph File",
-            AllowMultiple = false,
-            FileTypeFilter = new[]
-            {
-            new FilePickerFileType("DGML Graph") { Patterns = new[] { "*.dgml" } }
-        }
-        });
-
-        if (files.Count == 1)
-        {
-            var path = files[0].Path.LocalPath;
-            controller.Model.LoadFromDgmlFile(path);
+            if (from is null || canvas is null) return default;
+            var pt = from.TransformToVisual(canvas)?.Transform(local);
+            return pt ?? default;
         }
     }
 
-    public async Task SaveGraphUsingDialogAsync(bool forceNewFile = false)
+    // ─────────────────────────────────────────────────────────────
+    // Minimal event args if your GraphNodeControl can raise them
+    // (Put these alongside the control if you prefer)
+    // ─────────────────────────────────────────────────────────────
+    public sealed class PinEventArgs : EventArgs
     {
-        var top = TopLevel.GetTopLevel(canvas);
-        if (top?.StorageProvider == null) return;
+        public GraphNode Node { get; }
+        public NodePin Pin { get; }
+        public Point? CanvasPoint { get; }  // if control computes it, great
+        public Point LocalPoint { get; }    // fallback (in control space)
 
-        string? path = null;
-
-        if (forceNewFile)
-        {
-            var storagePath = await top.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
-            {
-                Title = "Save DGML Graph As",
-                DefaultExtension = "dgml",
-                FileTypeChoices = new[]
-                {
-                new FilePickerFileType("DGML Graph") { Patterns = new[] { "*.dgml" } }
-            }
-            });
-            path = storagePath?.Path.LocalPath;
-        }
-
-        if (!forceNewFile && controller.Model?.FilePath != null)
-            path = controller.Model.FilePath;
-
-        if (path != null)
-        {
-            controller.Model.SaveAsDgml(path);
-        }
+        public PinEventArgs(GraphNode node, NodePin pin, Point localPoint, Point? canvasPoint = null)
+        { Node = node; Pin = pin; LocalPoint = localPoint; CanvasPoint = canvasPoint; }
     }
-
 }

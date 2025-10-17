@@ -1,0 +1,59 @@
+﻿<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:DirectedGraphEditor.Controls.GraphNodeControl">
+
+  <!--
+  <Design.PreviewWith>
+    <Border Padding=20>
+    </Border>
+  </Design.PreviewWith>
+  -->
+  
+  <!-- ===========================
+       GraphNodeControl styles
+       =========================== -->
+
+  <!-- Node body (stable on hover) -->
+  <Style Selector="local|GraphNodeControl Border.nodeBody">
+    <Setter Property="Background"       Value="#FF2B2B2B"/>
+    <!-- opaque -->
+    <Setter Property="BorderBrush"      Value="Aqua"/>
+    <Setter Property="BorderThickness"  Value="2"/>
+    <Setter Property="CornerRadius"     Value="8"/>
+    <Setter Property="Padding"          Value="8,6"/>
+    <Setter Property="HorizontalAlignment" Value="Center"/>
+    <Setter Property="VerticalAlignment"   Value="Center"/>
+  </Style>
+
+  <!-- Lock hover to the same look (avoid shimmer) -->
+  <Style Selector="local|GraphNodeControl Border.nodeBody:pointerover">
+    <Setter Property="Background"  Value="#FF2B2B2B"/>
+    <Setter Property="BorderBrush" Value="Aqua"/>
+  </Style>
+
+  <!-- Optional: selected state (toggle via Classes:selected) -->
+  <Style Selector="local|GraphNodeControl Border.nodeBody.selected">
+    <Setter Property="Background"  Value="#FF3A3A3A"/>
+    <Setter Property="BorderBrush" Value="#FFD700"/>
+  </Style>
+
+  <!-- Pin dots (both sides). If you want a class, set Classes="pin" and
+       change the selector to 'Ellipse.pin'. -->
+  <Style Selector="local|GraphNodeControl Ellipse">
+    <Setter Property="Width"  Value="10"/>
+    <Setter Property="Height" Value="10"/>
+    <Setter Property="Fill"   Value="LightGray"/>
+    <Setter Property="Stroke" Value="Black"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+  </Style>
+
+  <!-- Node title text -->
+  <Style Selector="local|GraphNodeControl TextBlock.nodeTitle">
+    <Setter Property="Foreground" Value="White"/>
+    <Setter Property="HorizontalAlignment" Value="Center"/>
+    <Setter Property="VerticalAlignment"   Value="Center"/>
+    <Setter Property="Margin" Value="0"/>
+  </Style>
+
+</Styles>
+

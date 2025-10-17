@@ -21,13 +21,12 @@ namespace DirectedGraphCore.Controllers
         private readonly HashSet<GraphNode> selectedNodes = new();
         public IReadOnlyCollection<GraphNode> SelectedNodes => selectedNodes;
 
-        // ─── Construction ────────────────────────────────────────
         public GraphController(GraphModel model) => Model = model;
 
-        // ─── Node Operations ─────────────────────────────────────
+        // ─── Node Ops ────────────────────────────────────────────
         public GraphNode AddNode(string id, string name, GraphPosition position)
         {
-            var node = new GraphNode( id, name ) {  Position = position };
+            var node = new GraphNode(id, name) { Position = position };
             Model.Nodes.Add(id, node);
             OnNodeAdded(node);
             return node;
@@ -38,37 +37,44 @@ namespace DirectedGraphCore.Controllers
             if (selectedNodes.Remove(node))
                 OnSelectionChanged();
 
+            // Remove edges touching this node (raise events)
+            var touching = Model.Edges.Values
+                .Where(e => e.SourceNodeId == node.Id || e.TargetNodeId == node.Id)
+                .ToList();
+            foreach (var e in touching)
+            {
+                Model.Edges.Remove(e.Id);
+                OnEdgeRemoved(e);
+            }
+
             Model.Nodes.Remove(node.Id);
             OnNodeRemoved(node);
         }
 
-
-
-        // ─── Edge Operations ─────────────────────────────────────
-        public GraphEdge AddEdge(string sourceId, int sourceSlot, string targetId, int targetSlot)
+        // ─── Edge Ops ────────────────────────────────────────────
+        // Preferred: pass IDs directly
+        public GraphEdge AddEdge(string sourceNodeId, string sourcePinId, string targetNodeId, string targetPinId)
         {
-            var sourceNode = Model.FindOrAddNode(sourceId);
-            var targetNode = Model.FindOrAddNode(targetId);
-            var edge = new GraphEdge(sourceNode, sourceSlot, targetNode, targetSlot);
-            Model.Edges.Add(edge.Id, edge);
+            var edge = Model.AddEdge(sourceNodeId, sourcePinId, targetNodeId, targetPinId);
             OnEdgeAdded(edge);
             return edge;
         }
 
+        // Convenience: pass objects (nodes + pins)
+        public GraphEdge AddEdge(GraphNode sourceNode, NodePin sourcePin, GraphNode targetNode, NodePin targetPin)
+            => AddEdge(sourceNode.Id, sourcePin.Id, targetNode.Id, targetPin.Id);
+
         public void RemoveEdge(GraphEdge edge)
         {
-            Model.Edges.Remove(edge.Id);
-            OnEdgeRemoved(edge);
+            if (Model.Edges.Remove(edge.Id))
+                OnEdgeRemoved(edge);
         }
 
         // ─── Selection ───────────────────────────────────────────
         public void SelectNode(GraphNode node, bool multiSelect = false)
         {
-            if (!multiSelect)
-                selectedNodes.Clear();
-
-            if (selectedNodes.Add(node))
-                OnSelectionChanged();
+            if (!multiSelect) selectedNodes.Clear();
+            if (selectedNodes.Add(node)) OnSelectionChanged();
         }
 
         public void ClearSelection()
@@ -90,24 +96,18 @@ namespace DirectedGraphCore.Controllers
             }
         }
 
-        /// <summary>Remove all children, reset from file using 'path', and then add back.</summary>
-        /// <param name="path"></param>
-        /// <exception cref="Exception"></exception>
+        // ─── Reload ──────────────────────────────────────────────
         public void ReloadFromFile(string path)
         {
             GraphReset?.Invoke();
-
             try
             {
-                // Notify removal of current visuals
                 foreach (var n in Model.Nodes.Values) OnNodeRemoved(n);
                 foreach (var e in Model.Edges.Values) OnEdgeRemoved(e);
 
                 Model.LoadFromDgmlFile(path);
-
                 ClearSelection();
 
-                // Notify new visuals
                 foreach (var n in Model.Nodes.Values) OnNodeAdded(n);
                 foreach (var e in Model.Edges.Values) OnEdgeAdded(e);
             }
@@ -123,25 +123,42 @@ namespace DirectedGraphCore.Controllers
 
         public void ReloadFrom(GraphModel src)
         {
-            // notify removals
             foreach (var n in Model.Nodes.Values) OnNodeRemoved(n);
             foreach (var e in Model.Edges.Values) OnEdgeRemoved(e);
 
             Model.Nodes.Clear();
             Model.Edges.Clear();
-            foreach (var kv in src.Nodes) 
-                Model.Nodes[kv.Key] = kv.Value;
-            foreach (var kv in src.Edges) 
-                Model.Edges[kv.Key] = kv.Value;
+            foreach (var kv in src.Nodes) Model.Nodes[kv.Key] = kv.Value;
+            foreach (var kv in src.Edges) Model.Edges[kv.Key] = kv.Value;
 
             ClearSelection();
             foreach (var n in Model.Nodes.Values) OnNodeAdded(n);
             foreach (var e in Model.Edges.Values) OnEdgeAdded(e);
         }
 
+        public bool TryRemovePin(GraphNode node, NodePin pin, out string reason)
+        {
+            if (Model.HasEdgesOnPin(node.Id, pin.Id))
+            {
+                reason = "Pin has attached edges. Remove or reroute those edges first.";
+                return false;
+            }
 
+            // Safe to remove
+            bool removed = node.RemovePin(pin); // your GraphNode helper reindexes that side
+            reason = removed ? string.Empty : "Pin not found on node.";
+            return removed;
+        }
 
-        // ─── Protected Event Raisers ─────────────────────────────
+        public int ForceRemovePin(GraphNode node, NodePin pin)
+        {
+            var toDelete = Model.EdgesOfPin(node.Id, pin.Id).ToList();
+            foreach (var e in toDelete) { Model.Edges.Remove(e.Id); OnEdgeRemoved(e); }
+            node.RemovePin(pin);
+            return toDelete.Count;
+        }
+
+        // ─── Event raisers ───────────────────────────────────────
         protected virtual void OnNodeAdded(GraphNode node) => NodeAdded?.Invoke(node);
         protected virtual void OnNodeRemoved(GraphNode node) => NodeRemoved?.Invoke(node);
         protected virtual void OnEdgeAdded(GraphEdge edge) => EdgeAdded?.Invoke(edge);

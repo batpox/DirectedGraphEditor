@@ -53,20 +53,20 @@ public sealed class GraphEdgeViewModel : ObservableObject
         }
     }
 
-    public void UpdateSource(GraphNodeViewModel newSource, int newSlotIndex)
+    public void UpdateSource(GraphNodeViewModel newSource, int newPinIndex)
     {
         SourceNode.PropertyChanged -= OnPositionChanged;
         SourceNode = newSource;
-        SourceOutputIndex = newSlotIndex;
+        SourceOutputIndex = newPinIndex;
         SubscribeToNodes();
         NotifyEndpointsChanged();
     }
 
-    public void UpdateTarget(GraphNodeViewModel newTarget, int newSlotIndex)
+    public void UpdateTarget(GraphNodeViewModel newTarget, int newPinIndex)
     {
         TargetNode.PropertyChanged -= OnPositionChanged;
         TargetNode = newTarget;
-        TargetInputIndex = newSlotIndex;
+        TargetInputIndex = newPinIndex;
         SubscribeToNodes();
         NotifyEndpointsChanged();
     }
@@ -80,16 +80,16 @@ public sealed class GraphEdgeViewModel : ObservableObject
     // Center of output ellipse (right edge)
     public Point StartPoint
         => new(
-    SourceNode.X + SourceNode.Style.OutputXOffset + SourceNode.Style.SlotRadius,
-    SourceNode.Y + SourceNode.Style.SlotYOffset 
-            + SourceOutputIndex * SourceNode.Style.SlotYPitch + SourceNode.Style.SlotRadius);
+    SourceNode.X + SourceNode.Style.OutputXOffset + SourceNode.Style.PinRadius,
+    SourceNode.Y + SourceNode.Style.PinYOffset 
+            + SourceOutputIndex * SourceNode.Style.PinYPitch + SourceNode.Style.PinRadius);
 
 
     // Center of input ellipse (left edge)
     public Point EndPoint
         => new(
-    TargetNode.X + TargetNode.Style.InputXOffset + TargetNode.Style.SlotRadius,
-    TargetNode.Y + TargetNode.Style.SlotYOffset 
-            + TargetInputIndex * TargetNode.Style.SlotYPitch + TargetNode.Style.SlotRadius);
+    TargetNode.X + TargetNode.Style.InputXOffset + TargetNode.Style.PinRadius,
+    TargetNode.Y + TargetNode.Style.PinYOffset 
+            + TargetInputIndex * TargetNode.Style.PinYPitch + TargetNode.Style.PinRadius);
 
 }

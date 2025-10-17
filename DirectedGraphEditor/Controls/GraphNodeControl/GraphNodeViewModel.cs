@@ -9,7 +9,13 @@ public sealed class GraphNodeViewModel : ObservableObject
     private float _x;
     private float _y;
 
+    ////public float X => Node.Position.X;
+    ////public float Y => Node.Position.Y;
+
+
+
     public GraphNode Node { get; }
+    public string Name => Node.Name;
 
     public GraphNodeViewModel(GraphNode node)
     {
@@ -44,8 +50,8 @@ public sealed class GraphNodeViewModel : ObservableObject
 
     public NodeStyle Style { get; } = new(); // default style
 
-    public string Name => Node.Name;
+    public IEnumerable<NodePin> Inputs => Node.Inputs;
+    public IEnumerable<NodePin> Outputs => Node.Outputs;
 
-    public IReadOnlyList<GraphSlot> Inputs => Node.Inputs;
-    public IReadOnlyList<GraphSlot> Outputs => Node.Outputs;
+
 }
