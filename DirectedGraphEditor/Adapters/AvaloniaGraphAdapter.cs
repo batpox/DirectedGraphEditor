@@ -1,6 +1,7 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
+using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using DirectedGraphCore.Commands;
@@ -11,6 +12,8 @@ using DirectedGraphEditor.Controls.GraphNodeControl;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
+using System.Numerics;
 
 namespace DirectedGraphEditor.Adapters
 {
@@ -23,6 +26,7 @@ namespace DirectedGraphEditor.Adapters
 
         // NodeId -> its view (GraphNodeControl)
         private readonly Dictionary<string, GraphNodeControl> nodeViews = new();
+        private readonly Dictionary<string, GraphNodeControl> edgeViews = new();
 
         // Drag state
         private GraphNode? dragSourceNode;
@@ -42,6 +46,41 @@ namespace DirectedGraphEditor.Adapters
         // ─────────────────────────────────────────────────────────
         // Canvas / View registration
         // ─────────────────────────────────────────────────────────
+
+        public void HandleCanvasLoaded(Canvas c) => AttachCanvas(c);
+
+        // Called when user presses on the blank canvas(not a pin).
+        public void HandleCanvasPointerPressed(PointerPressedEventArgs e)
+        {
+            // Optional place to begin panning or marquee selection.
+            // For now, no-op so it compiles and doesn’t change drag logic.
+            // Example starter:
+            // if (rubber == null) { /* clear selection, start marquee, etc. */ }
+        }
+
+        public void HandleCanvasPointerMoved(PointerEventArgs e)
+        {
+            if (canvas is null || rubber is null) return;              // only if a drag is active
+            UpdateEdgeDrag(e.GetPosition(canvas));                     // <- reuse your method
+        }
+
+        public void HandleCanvasPointerReleased(PointerReleasedEventArgs e)
+        {
+            if (canvas is null || rubber is null) return;              // not dragging an edge
+            var pt = e.GetPosition(canvas);
+
+            var target = HitTestNode(pt);
+            if (target is null) { CancelEdgeDrag(); return; }
+
+            var view = nodeViews[target.Id];
+            var local = canvas.TranslatePoint(pt, view);
+            if (local is null) { CancelEdgeDrag(); return; }
+
+            bool targetIsInputSide = local.Value.X < view.Bounds.Width / 2.0;
+            CompleteEdgeDragOverNode(target, pt, targetIsInputSide);   // <- reuse your method
+        }
+
+
         public void AttachCanvas(Canvas canvas)
         {
             this.canvas = canvas;
@@ -59,7 +98,7 @@ namespace DirectedGraphEditor.Adapters
 
         public void UnregisterView(GraphNode node)
         {
-            if (!nodeViews.TryGetValue(node.Id, out var view)) 
+            if (!nodeViews.TryGetValue(node.Id, out var view))
                 return;
 
             view.PinDown -= OnPinDown;
@@ -97,11 +136,11 @@ namespace DirectedGraphEditor.Adapters
             // Convert drop to node space
             var view = nodeViews[targetNode.Id];
 
-            var dropInNode = ToLocal(canvas, view, dropCanvasPt); 
+            var dropInNode = ToLocal(canvas, view, dropCanvasPt);
             if (dropInNode is null)
-            { 
-                CancelEdgeDrag(); 
-                return; 
+            {
+                CancelEdgeDrag();
+                return;
             }
 
             // Resolve or insert pin at the drop Y
@@ -217,7 +256,7 @@ namespace DirectedGraphEditor.Adapters
 
         private static List<(NodePin pin, double y)> GetPinCenters(GraphNodeControl view, EnumNodePinDirection dir)
         {
-            var list = new List<(NodePin, double)>();
+            var list = new List<(NodePin pin, double y)>();
             foreach (var e in view.GetVisualDescendants().OfType<Ellipse>())
             {
                 if (!e.Classes.Contains("pin")) continue;

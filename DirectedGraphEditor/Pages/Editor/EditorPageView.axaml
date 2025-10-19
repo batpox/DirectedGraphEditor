@@ -53,8 +53,9 @@
       </MenuItem>
     </Menu>
 
+  <!-- Transparent background needed for pointer events -->
   <Canvas x:Name="GraphCanvas"
-        Background="#222"
+        Background="Transparent" 
         Width="1000"
         Height="800"
         PointerPressed="OnCanvasPointerPressed"

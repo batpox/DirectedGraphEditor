@@ -1,35 +1,43 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
-using Avalonia.VisualTree;
-using AvaloniaEdit.Utils;
+using DirectedGraphCore.Commands;
+using DirectedGraphCore.Controllers;
 using DirectedGraphCore.Models;
+using DirectedGraphCore.Persistence;
 using DirectedGraphEditor.Adapters;
-using DirectedGraphEditor.Controls.GraphNodeControl;
-using DirectedGraphEditor.Helpers;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Reflection;
+using DirectedGraphEditor.Services;
 using System.Threading.Tasks;
+using System.Windows.Input;
 
 namespace DirectedGraphEditor.Pages.Editor;
 
 
 public partial class EditorPageView : UserControl
 {
-    private AvaloniaGraphAdapter? adapter;
+    // fields
+    private readonly CommandStack _commands = new();
+    private readonly GraphController _controller;
+    private AvaloniaGraphAdapter _adapter;
+
+    private IGraphPersistence _persistence = new GraphPersistence();
+    private IFileDialogService _fileDialogs = new StorageProviderFileDialogService();
 
     public EditorPageView()
     {
         InitializeComponent();
+
+
+        // however you get/create your model:
+        var model = new GraphModel();
+        _controller = new GraphController(model);
+
+        // ✅ pass CommandStack here
+        _adapter = new AvaloniaGraphAdapter(_controller, _commands);
+
 
         // Create adapter when the view is ready to render
         this.AttachedToVisualTree += OnAttachedToVisualTree;
@@ -47,51 +55,65 @@ public partial class EditorPageView : UserControl
             return;
 
         // GraphCanvas is the <Canvas x:Name="GraphCanvas"/> in .axaml
-        adapter = new AvaloniaGraphAdapter(vm.Controller, GraphCanvas);
+        _adapter = new AvaloniaGraphAdapter(vm.Controller, _commands);
+
     }
 
     private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
         // Dispose / unsubscribe when view is removed
-        adapter?.Dispose();
-        adapter = null;
+        ////_adapter?.Dispose();
+        _adapter = null;
     }
 
     // ─── Canvas event hooks ───────────────────────────────────────
     private void OnCanvasPointerPressed(object? sender, PointerPressedEventArgs e)
-        => adapter?.HandleCanvasPointerPressed(e);
+        => _adapter?.HandleCanvasPointerPressed(e);
 
     private void OnCanvasPointerMoved(object? sender, PointerEventArgs e)
-        => adapter?.HandleCanvasPointerMoved(e);
+        => _adapter?.HandleCanvasPointerMoved(e);
 
     private void OnCanvasPointerReleased(object? sender, PointerReleasedEventArgs e)
-        => adapter?.HandleCanvasPointerReleased(e);
+        => _adapter?.HandleCanvasPointerReleased(e);
 
     private void OnLoaded(object? sender, RoutedEventArgs e)
-            => adapter?.HandleCanvasLoaded(e);
+    {
+        // Ensure the canvas can receive pointer events
+        if (GraphCanvas.Background is null)
+            GraphCanvas.Background = Brushes.Transparent;
+
+
+        _adapter?.HandleCanvasLoaded(GraphCanvas);
+    }
 
 
     private async void OnOpenGraph(object? sender, RoutedEventArgs e)
     {
-        string? path = await ShowOpenDialogAsync();
-        if (path == null) return;
+        var top = TopLevel.GetTopLevel(this);
+        if (top is null) return;
 
-        if (DataContext is EditorPageViewModel vm)
-        {
-            vm.OpenGraph(path);
-        }
+        var path = await _fileDialogs.ShowOpenGraphAsync(top);
+        if (string.IsNullOrWhiteSpace(path)) return;
+
+        var gm = await _persistence.LoadDgmlAsync(path);
+        _controller.ReloadFrom(gm);
     }
 
     private async void OnSaveGraph(object? sender, RoutedEventArgs e)
     {
-        if (adapter != null)
-            await adapter.SaveGraphUsingDialogAsync();
+        var top = TopLevel.GetTopLevel(this);
+        if (top is null) return;
+
+        var path = await _fileDialogs.ShowSaveGraphAsync(top);
+        if (string.IsNullOrWhiteSpace(path)) return;
+
+        await _persistence.SaveDgmlAsync(_controller.Model, path);
+        _controller.Model.FilePath = path;
     }
 
     private async void OnSaveGraphAs(object? sender, RoutedEventArgs e)
     {
-        if (adapter != null)
-            await adapter.SaveGraphUsingDialogAsync(forceNewFile: true);
+
     }
 
     private async Task<string?> ShowOpenDialogAsync()

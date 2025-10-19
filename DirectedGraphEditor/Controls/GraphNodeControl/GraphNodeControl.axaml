@@ -11,10 +11,10 @@
     x:Class="DirectedGraphEditor.Controls.GraphNodeControl.GraphNodeControl">
 
 
-    <Grid Width="100" Height="55" ColumnDefinitions="Auto,Auto,Auto">
+    <Grid MinWidth="120" Height="60" ColumnDefinitions="Auto,Auto,Auto">
 
       <!-- Left/Source/input pins -->
-      <ItemsControl Grid.Column="0" Items="{Binding Inputs}">
+      <ItemsControl Grid.Column="0" ItemsSource="{Binding Inputs}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
             <panels:EvenlySpacedPanel/>
@@ -64,7 +64,7 @@
 
       <!-- Right Source (output) pin: right side -->
 
-      <ItemsControl Grid.Column="2" Items="{Binding Outputs}">
+      <ItemsControl Grid.Column="2" ItemsSource="{Binding Outputs}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
             <panels:EvenlySpacedPanel/>
