@@ -9,7 +9,9 @@ using DirectedGraphCore.Controllers;
 using DirectedGraphCore.Models;
 using DirectedGraphCore.Persistence;
 using DirectedGraphEditor.Adapters;
+using DirectedGraphEditor.Controls.GraphNodeControl;
 using DirectedGraphEditor.Services;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
@@ -30,7 +32,6 @@ public partial class EditorPageView : UserControl
     {
         InitializeComponent();
 
-
         // however you get/create your model:
         var model = new GraphModel();
         _controller = new GraphController(model);
@@ -42,6 +43,11 @@ public partial class EditorPageView : UserControl
         // Create adapter when the view is ready to render
         this.AttachedToVisualTree += OnAttachedToVisualTree;
         this.DetachedFromVisualTree += OnDetachedFromVisualTree;
+
+        // Subscribe to controller events to create/remove views
+        _controller.NodeAdded += OnNodeAdded;
+        _controller.NodeRemoved += OnNodeRemoved;
+        _controller.NodeMoved += OnNodeMoved; // optional but good to have
 
         OpenMenuItem.Click += OnOpenGraph;
         SaveMenuItem.Click += OnSaveGraph;
@@ -76,16 +82,67 @@ public partial class EditorPageView : UserControl
     private void OnCanvasPointerReleased(object? sender, PointerReleasedEventArgs e)
         => _adapter?.HandleCanvasPointerReleased(e);
 
+    ////private void OnLoaded(object? sender, RoutedEventArgs e)
+    ////{
+    ////    // Ensure the canvas can receive pointer events
+    ////    if (GraphCanvas.Background is null)
+    ////        GraphCanvas.Background = Brushes.Transparent;
+
+
+    ////    _adapter?.HandleCanvasLoaded(GraphCanvas);
+    ////}
+
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
-        // Ensure the canvas can receive pointer events
-        if (GraphCanvas.Background is null)
-            GraphCanvas.Background = Brushes.Transparent;
+        if (GraphCanvas.Background is null) GraphCanvas.Background = Brushes.Transparent;
+        _adapter.HandleCanvasLoaded(GraphCanvas);
 
-
-        _adapter?.HandleCanvasLoaded(GraphCanvas);
+        // If model already has nodes (e.g., after you called ReloadFrom), paint them:
+        foreach (var node in _controller.Model.Nodes.Values) OnNodeAdded(node);
     }
 
+
+    private void OnNodeAdded(GraphNode node)
+    {
+        var view = new GraphNodeControl { DataContext = node };
+        // position the control using the model Position:
+        view.SetValue(Canvas.LeftProperty, node.Position.X);
+        view.SetValue(Canvas.TopProperty, node.Position.Y);
+        // optional size if you persist it:
+        if (node.Size is GraphSize s) { view.Width = s.Width; view.Height = s.Height; }
+
+        // put it on top and add to canvas
+        view.SetValue(Panel.ZIndexProperty, 100);
+        GraphCanvas.Children.Add(view);
+
+        // let the adapter know so drag/snap works
+        _adapter.RegisterView(node, view);
+    }
+
+    private void OnNodeRemoved(GraphNode node)
+    {
+        // find the view by DataContext (or keep a map if you prefer)
+        var toRemove = GraphCanvas.Children
+            .OfType<GraphNodeControl>()
+            .FirstOrDefault(v => ReferenceEquals(v.DataContext, node));
+        if (toRemove != null)
+        {
+            _adapter.UnregisterView(node);
+            GraphCanvas.Children.Remove(toRemove);
+        }
+    }
+
+    private void OnNodeMoved(GraphNode node)
+    {
+        var view = GraphCanvas.Children
+            .OfType<GraphNodeControl>()
+            .FirstOrDefault(v => ReferenceEquals(v.DataContext, node));
+        if (view != null)
+        {
+            view.SetValue(Canvas.LeftProperty, node.Position.X);
+            view.SetValue(Canvas.TopProperty, node.Position.Y);
+        }
+    }
 
     private async void OnOpenGraph(object? sender, RoutedEventArgs e)
     {
