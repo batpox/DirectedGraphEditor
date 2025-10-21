@@ -11,10 +11,34 @@
     x:Class="DirectedGraphEditor.Controls.GraphNodeControl.GraphNodeControl">
 
 
-    <Grid MinWidth="120" Height="60" ColumnDefinitions="Auto,Auto,Auto">
+    <Grid MinWidth="120" Height="60" ColumnDefinitions="16,*,16">
+
+      <!-- BODY first so pins declared later render on top -->
+      <Border  x:Name="NodeBody"
+            Classes="nodeBody"
+            Grid.Column="1"
+            Width="80" Height="50"
+        CornerRadius="8"
+        Background="#4444"
+        BorderBrush="Aqua"
+        BorderThickness="2"
+        PointerPressed="OnNodeBorderPressed"
+        PointerReleased="OnNodeBorderReleased"
+        PointerCaptureLost="OnNodeBorderCaptureLost"
+        >
+
+        <TextBlock Text="{Binding Name}"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Top"
+                Foreground="White">
+        </TextBlock>
+      </Border>
+
 
       <!-- Left/Source/input pins -->
-      <ItemsControl Grid.Column="0" ItemsSource="{Binding Inputs}">
+      <ItemsControl Grid.Column="0" ItemsSource="{Binding Inputs}"
+                    HorizontalAlignment="Center" VerticalAlignment="Stretch" 
+                    >
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
             <panels:EvenlySpacedPanel/>
@@ -31,39 +55,8 @@
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
-      <!--
-      <Ellipse x:Name="TargetPin"
-               Grid.Column="0"
-               VerticalAlignment="Center" HorizontalAlignment="Right"
-               Width="10" Height="10"
-               Margin="0,0,0,0"
-               Fill="LightGray" Stroke="Black"
-               ToolTip.Tip="Target Pin" >
-        
-      </Ellipse>
-      -->
-
-      <!-- Body of the node: middle -->
-      <Border  x:Name="NodeBody"
-                Classes="nodeBody"
-            Grid.Column="1"
-               Width="80" Height="50"
-        CornerRadius="8"
-        Background="#4444"
-        BorderBrush="Aqua"
-        BorderThickness="2"
-        PointerPressed="OnNodeBorderPressed">
-
-        <TextBlock Text="{Binding Name}"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Top"
-                Foreground="White">
-        </TextBlock>
-      </Border>
-
 
       <!-- Right Source (output) pin: right side -->
-
       <ItemsControl Grid.Column="2" ItemsSource="{Binding Outputs}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>

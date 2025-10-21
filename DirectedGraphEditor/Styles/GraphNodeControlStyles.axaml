@@ -15,9 +15,9 @@
 
   <!-- Node body (stable on hover) -->
   <Style Selector="local|GraphNodeControl Border.nodeBody">
-    <Setter Property="Background"       Value="#FF2B2B2B"/>
+    <Setter Property="Background"       Value="#2A2A2A"/>
     <!-- opaque -->
-    <Setter Property="BorderBrush"      Value="Aqua"/>
+    <Setter Property="BorderBrush"      Value="#00e5ff"/>
     <Setter Property="BorderThickness"  Value="2"/>
     <Setter Property="CornerRadius"     Value="8"/>
     <Setter Property="Padding"          Value="8,6"/>
@@ -27,8 +27,8 @@
 
   <!-- Lock hover to the same look (avoid shimmer) -->
   <Style Selector="local|GraphNodeControl Border.nodeBody:pointerover">
-    <Setter Property="Background"  Value="#FF2B2B2B"/>
-    <Setter Property="BorderBrush" Value="Aqua"/>
+    <Setter Property="Background"  Value="#333333"/>  <!-- subtle -->
+    <Setter Property="BorderBrush" Value="#19e5ff"/>
   </Style>
 
   <!-- Optional: selected state (toggle via Classes:selected) -->

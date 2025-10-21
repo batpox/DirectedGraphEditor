@@ -4,6 +4,7 @@ using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.VisualTree;
+using AvaloniaEdit.Utils;
 using DirectedGraphCore.Models;
 using System;
 using System.Linq;
@@ -110,9 +111,21 @@ public partial class GraphNodeControl : UserControl
         if (DataContext is not GraphNodeViewModel node)
             return;
 
+        // capture the pointer to allow drags starting on body
+        this.CapturePointer(e.Pointer);
+
         Console.WriteLine($"Pressed node surface: {node.Name}");
 
         // Dragging might begin here, or it might be handled at the canvas level
         e.Handled = true;
+    }
+
+    private void OnNodeBorderReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        this.ReleasePointerCapture(e.Pointer); // safe even if already released
+    }
+    private void OnNodeBorderCaptureLost(object? sender, PointerCaptureLostEventArgs e)
+    {
+        this.ReleasePointerCapture(e.Pointer); // safe even if already released
     }
 }

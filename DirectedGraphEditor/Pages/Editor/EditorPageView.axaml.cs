@@ -82,15 +82,6 @@ public partial class EditorPageView : UserControl
     private void OnCanvasPointerReleased(object? sender, PointerReleasedEventArgs e)
         => _adapter?.HandleCanvasPointerReleased(e);
 
-    ////private void OnLoaded(object? sender, RoutedEventArgs e)
-    ////{
-    ////    // Ensure the canvas can receive pointer events
-    ////    if (GraphCanvas.Background is null)
-    ////        GraphCanvas.Background = Brushes.Transparent;
-
-
-    ////    _adapter?.HandleCanvasLoaded(GraphCanvas);
-    ////}
 
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
