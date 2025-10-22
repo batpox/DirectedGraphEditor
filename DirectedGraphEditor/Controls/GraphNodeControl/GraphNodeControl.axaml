@@ -23,9 +23,12 @@
         BorderBrush="Aqua"
         BorderThickness="2"
         PointerPressed="OnNodeBorderPressed"
+        >
+
+        <!-- Commented out 
         PointerReleased="OnNodeBorderReleased"
         PointerCaptureLost="OnNodeBorderCaptureLost"
-        >
+        -->
 
         <TextBlock Text="{Binding Name}"
                 HorizontalAlignment="Center"

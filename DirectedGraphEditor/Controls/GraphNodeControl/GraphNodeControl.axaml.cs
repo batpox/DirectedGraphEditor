@@ -17,6 +17,8 @@ public partial class GraphNodeControl : UserControl
     public event EventHandler<PinEventArgs>? PinDown;
     public event EventHandler<PinEventArgs>? PinDrag;
     public event EventHandler<PinEventArgs>? PinUp;
+    // expose the pressed event so the adapter can start a node drag
+    public event EventHandler<PointerPressedEventArgs>? BodyPressed;
 
     public Ellipse sourcePin => this.FindControl<Ellipse>("SourcePin");
     public Ellipse targetPin => this.FindControl<Ellipse>("TargetPin");
@@ -108,16 +110,8 @@ public partial class GraphNodeControl : UserControl
 
     private void OnNodeBorderPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (DataContext is not GraphNodeViewModel node)
-            return;
-
-        // capture the pointer to allow drags starting on body
-        this.CapturePointer(e.Pointer);
-
-        Console.WriteLine($"Pressed node surface: {node.Name}");
-
-        // Dragging might begin here, or it might be handled at the canvas level
-        e.Handled = true;
+        BodyPressed?.Invoke(this, e);   // <-- no CapturePointer here
+        // e.Handled = true;  // optional
     }
 
     private void OnNodeBorderReleased(object? sender, PointerReleasedEventArgs e)

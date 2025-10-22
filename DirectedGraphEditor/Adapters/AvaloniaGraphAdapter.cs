@@ -4,6 +4,7 @@ using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.VisualTree;
+using AvaloniaEdit.Utils;
 using DirectedGraphCore.Commands;
 using DirectedGraphCore.Controllers;
 using DirectedGraphCore.Models;
@@ -12,6 +13,7 @@ using DirectedGraphEditor.Controls.GraphNodeControl;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.NetworkInformation;
 using System.Numerics;
 
@@ -37,6 +39,27 @@ namespace DirectedGraphEditor.Adapters
         private const double PinRadiusPx = 5.0;  // Ellipse 10x10
         private const double SnapDistance = PinRadiusPx * 4;  // two diameters
 
+        // -------------------- fields (add near your other fields) --------------------
+        private enum PressState { None, DragNode, DragEndpoint }
+
+        private PressState pressState = PressState.None;
+
+        // Node drag state
+        private GraphNodeControl? dragNodeView;
+        private GraphNode? dragNodeModel;
+        private Point dragStartCanvas;
+        private double startLeft, startTop;
+
+        // Endpoint drag state
+        private GraphEdge? dragEdge;
+        private bool dragEndpointIsTarget; // true = dragging Target end, false = dragging Source end
+        private Point fixedEndCanvas;      // canvas point of the anchored (non-dragging) end
+
+        // Visuals
+        private readonly Dictionary<string, Line> edgeLines = new();  // keep this if not present
+        private const double EndpointHitRadius = 10; // px
+
+
         public AvaloniaGraphAdapter(GraphController controller, CommandStack commands)
         {
             this.controller = controller;
@@ -49,14 +72,32 @@ namespace DirectedGraphEditor.Adapters
 
         public void HandleCanvasLoaded(Canvas c) => AttachCanvas(c);
 
-        // Called when user presses on the blank canvas(not a pin).
+
+        // -------------------- canvas handlers (replace/extend yours) --------------------
         public void HandleCanvasPointerPressed(PointerPressedEventArgs e)
         {
-            // Optional place to begin panning or marquee selection.
-            // For now, no-op so it compiles and doesn’t change drag logic.
-            // Example starter:
-            // if (rubber == null) { /* clear selection, start marquee, etc. */ }
+            if (canvas is null) return;
+            var p = e.GetPosition(canvas);
+
+            // 1) Try edge endpoint first
+            if (TryHitEdgeEndpoint(p, out var edge, out var isTargetEnd, out var fixedPt))
+            {
+                StartEndpointDrag(edge, isTargetEnd, fixedPt, p);
+                canvas.CapturePointer(e.Pointer);  // capture on canvas, not on node
+                e.Handled = true;
+                return;
+            }
+
+            // 2) Try node body
+            if (TryHitNodeBody(p, out var view, out var node))
+            {
+                StartNodeDrag(view, node, p);
+                canvas.CapturePointer(e.Pointer);
+                e.Handled = true;
+                return;
+            }
         }
+
 
         public void HandleCanvasPointerMoved(PointerEventArgs e)
         {
@@ -64,20 +105,237 @@ namespace DirectedGraphEditor.Adapters
             UpdateEdgeDrag(e.GetPosition(canvas));                     // <- reuse your method
         }
 
+        ////public void HandleCanvasPointerMoved(PointerEventArgs e)
+        ////{
+        ////    if (canvas is null) return;
+        ////    var p = e.GetPosition(canvas);
+
+        ////    if (pressState == PressState.DragNode && dragNodeView is not null && dragNodeModel is not null)
+        ////    {
+        ////        var dx = p.X - dragStartCanvas.X;
+        ////        var dy = p.Y - dragStartCanvas.Y;
+
+        ////        var newLeft = startLeft + dx;
+        ////        var newTop = startTop + dy;
+
+        ////        dragNodeView.SetValue(Canvas.LeftProperty, newLeft);
+        ////        dragNodeView.SetValue(Canvas.TopProperty, newTop);
+
+        ////        dragNodeModel.Position = new GraphPosition(newLeft, newTop, dragNodeModel.Position.Z);
+        ////        controller.RaiseNodeMoved(dragNodeModel); // expose a public raiser if needed
+        ////        return;
+        ////    }
+
+        ////    if (pressState == PressState.DragEndpoint)
+        ////    {
+        ////        // rubber already created in StartEndpointDrag
+        ////        UpdateEdgeDrag(p); // your existing method updates the rubber EndPoint
+        ////        return;
+        ////    }
+        ////}
+
         public void HandleCanvasPointerReleased(PointerReleasedEventArgs e)
         {
-            if (canvas is null || rubber is null) return;              // not dragging an edge
-            var pt = e.GetPosition(canvas);
+            if (canvas is null) return;
+            var p = e.GetPosition(canvas);
 
-            var target = HitTestNode(pt);
-            if (target is null) { CancelEdgeDrag(); return; }
+            if (pressState == PressState.DragNode)
+            {
+                pressState = PressState.None;
+                dragNodeView = null;
+                dragNodeModel = null;
+                canvas.ReleasePointerCapture(e.Pointer);
+                return;
+            }
 
-            var view = nodeViews[target.Id];
-            var local = canvas.TranslatePoint(pt, view);
-            if (local is null) { CancelEdgeDrag(); return; }
+            if (pressState == PressState.DragEndpoint)
+            {
+                // attempt to snap/attach
+                var targetNode = HitTestNode(p);
+                if (targetNode is null)
+                {
+                    // revert to original edge
+                    CancelEdgeDrag(); // also clears rubber
+                    pressState = PressState.None;
+                    dragEdge = null;
+                    canvas.ReleasePointerCapture(e.Pointer);
+                    return;
+                }
 
-            bool targetIsInputSide = local.Value.X < view.Bounds.Width / 2.0;
-            CompleteEdgeDragOverNode(target, pt, targetIsInputSide);   // <- reuse your method
+                // Which side of the node?
+                var view = nodeViews[targetNode.Id];
+                var local = canvas.TranslatePoint(p, view);
+                if (local is null)
+                {
+                    CancelEdgeDrag();
+                    pressState = PressState.None;
+                    dragEdge = null;
+                    canvas.ReleasePointerCapture(e.Pointer);
+                    return;
+                }
+                bool attachToInputSide = local.Value.X < view.Bounds.Width / 2.0;
+
+                CompleteEndpointReconnect(targetNode, p, attachToInputSide); // creates commands & executes
+                pressState = PressState.None;
+                dragEdge = null;
+                canvas.ReleasePointerCapture(e.Pointer);
+                return;
+            }
+
+            // default
+            canvas.ReleasePointerCapture(e.Pointer);
+        }
+
+        // -------------------- starting drags --------------------
+        private void StartNodeDrag(GraphNodeControl view, GraphNode node, Point startCanvas)
+        {
+            pressState = PressState.DragNode;
+            dragNodeView = view;
+            dragNodeModel = node;
+            dragStartCanvas = startCanvas;
+            startLeft = view.GetValue(Canvas.LeftProperty);
+            startTop = view.GetValue(Canvas.TopProperty);
+        }
+
+        private void StartEndpointDrag(GraphEdge edge, bool draggingTargetEnd, Point anchoredCanvasPoint, Point initialDragPoint)
+        {
+            pressState = PressState.DragEndpoint;
+            dragEdge = edge;
+            dragEndpointIsTarget = draggingTargetEnd;
+            fixedEndCanvas = anchoredCanvasPoint;
+
+            // start rubber from fixed point to current pointer
+            EnsureRubber();
+            UpdateRubber(fixedEndCanvas, initialDragPoint);
+        }
+
+        ////public void HandleCanvasPointerReleased(PointerReleasedEventArgs e)
+        ////{
+        ////    if (canvas is null || rubber is null) return;              // not dragging an edge
+
+        ////    if (rubber != null)
+        ////    {
+        ////        var pt = e.GetPosition(canvas);
+
+        ////        var target = HitTestNode(pt);
+        ////        if (target is null) { CancelEdgeDrag(); return; }
+
+        ////        var view = nodeViews[target.Id];
+
+        ////        var local = canvas.TranslatePoint(pt, view);
+        ////        if (local is null) { CancelEdgeDrag(); return; }
+
+        ////        bool targetIsInputSide = local.Value.X < view.Bounds.Width / 2.0;
+        ////        CompleteEdgeDragOverNode(target, pt, targetIsInputSide);   // <- reuse your method
+        ////        return;
+        ////    }
+
+        ////    dragNodeView = null;
+        ////    dragNodeModel = null;
+
+        ////}
+
+        // -------------------- endpoint reconnection --------------------
+        private void CompleteEndpointReconnect(GraphNode targetNode, Point dropCanvasPt, bool attachToInputSide)
+        {
+            if (dragEdge is null || dragSourceNode is null) { CancelEdgeDrag(); return; }
+
+            // Determine which end we’re reattaching and which is fixed
+            var sourceNodeId = dragEdge.SourceNodeId;
+            var sourcePinId = dragEdge.SourcePinId;
+            var targetNodeId = dragEdge.TargetNodeId;
+            var targetPinId = dragEdge.TargetPinId;
+
+            var fixedNode = dragEndpointIsTarget ? controller.Model.Nodes[sourceNodeId] : controller.Model.Nodes[targetNodeId];
+            var fixedPinId = dragEndpointIsTarget ? sourcePinId : targetPinId;
+            var movingWasTarget = dragEndpointIsTarget;
+
+            // Resolve snap vs insert on the drop node/pin
+            var view = nodeViews[targetNode.Id];
+            var dropInNode = canvas!.TranslatePoint(dropCanvasPt, view);
+            if (dropInNode is null) { CancelEdgeDrag(); return; }
+
+            var neededDir = attachToInputSide ? EnumNodePinDirection.Input : EnumNodePinDirection.Output;
+            var (resolvedPin, created, insertIndex) = ResolvePinForDrop(targetNode, neededDir, dropInNode.Value.Y);
+
+            // Build commands:
+            // 1) remove the old edge
+            var remove = new RemoveEdgeCommand(controller, dragEdge);
+
+            // 2) maybe insert a new pin on the drop node
+            InsertPinCommand? insertCmd = created ? new InsertPinCommand(targetNode, neededDir, insertIndex) : null;
+
+            // 3) add the new edge (fixed end stays the same, moving end becomes drop node/pin)
+            GraphNode fixedModelNode = fixedNode;
+            NodePin fixedModelPin = fixedModelNode.FindPinById(fixedPinId);
+
+            var add = movingWasTarget
+                ? new AddEdgeCommand(controller, fixedModelNode, fixedModelPin, targetNode, resolvedPin)   // source fixed → target moves
+                : new AddEdgeCommand(controller, targetNode, resolvedPin, fixedModelNode, fixedModelPin); // target fixed → source moves
+
+            var composite = new ConnectWithAutoPinCommand(insertCmd, new CompositeCommand(remove, add));
+            commands.Exec(composite);
+
+            CancelEdgeDrag();
+        }
+
+        // -------------------- hit testing --------------------
+        private bool TryHitNodeBody(Point canvasPoint, out GraphNodeControl view, out GraphNode node)
+        {
+            view = null!;
+            node = null!;
+            foreach (var kv in nodeViews)
+            {
+                var v = kv.Value;
+                var local = canvas!.TranslatePoint(canvasPoint, v);
+                if (local is null) continue;
+                if (new Rect(v.Bounds.Size).Contains(local.Value))
+                {
+                    view = v;
+                    node = controller.Model.Nodes[kv.Key];
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private bool TryHitEdgeEndpoint(Point canvasPoint, out GraphEdge edge, out bool isTargetEnd, out Point fixedEnd)
+        {
+            edge = null!;
+            isTargetEnd = false;
+            fixedEnd = default;
+
+            foreach (var kv in edgeLines)
+            {
+                var eId = kv.Key;
+                var line = kv.Value;
+                var sp = line.StartPoint;  // source end
+                var tp = line.EndPoint;    // target end
+
+                if (Distance(canvasPoint, sp) <= EndpointHitRadius)
+                {
+                    // dragging SOURCE end → fixed is target
+                    edge = controller.Model.Edges[eId];
+                    isTargetEnd = false;
+                    fixedEnd = tp;
+                    return true;
+                }
+                if (Distance(canvasPoint, tp) <= EndpointHitRadius)
+                {
+                    // dragging TARGET end → fixed is source
+                    edge = controller.Model.Edges[eId];
+                    isTargetEnd = true;
+                    fixedEnd = sp;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static double Distance(Point a, Point b)
+        {
+            var dx = a.X - b.X; var dy = a.Y - b.Y;
+            return Math.Sqrt(dx * dx + dy * dy);
         }
 
 
@@ -108,7 +366,69 @@ namespace DirectedGraphEditor.Adapters
         }
 
         // ─────────────────────────────────────────────────────────
-        // Public API if you prefer calling directly from the control
+        // Node dragging: Public API if you prefer calling directly from the control
+        // ─────────────────────────────────────────────────────────
+
+        ////public void StartNodeDrag(GraphNodeControl view, GraphNode node, Point startCanvas)
+        ////{
+        ////    dragNodeView = view;
+        ////    dragNodeModel = node;
+        ////    dragStartCanvas = startCanvas;
+        ////    startLeft = view.GetValue(Canvas.LeftProperty);
+        ////    startTop = view.GetValue(Canvas.TopProperty);
+        ////}
+
+        ////public void HandleCanvasPointerMoved(PointerEventArgs e)
+        ////{
+        ////    if (canvas is null) return;
+
+        ////    if (rubber != null)
+        ////    {
+        ////        UpdateEdgeDrag(e.GetPosition(canvas));
+        ////        return;
+        ////    }
+
+        ////    if (dragNodeView != null && dragNodeModel != null)
+        ////    {
+        ////        var p = e.GetPosition(canvas);
+        ////        var dx = p.X - dragStartCanvas.X;
+        ////        var dy = p.Y - dragStartCanvas.Y;
+
+        ////        var newLeft = startLeft + dx;
+        ////        var newTop = startTop + dy;
+
+        ////        dragNodeView.SetValue(Canvas.LeftProperty, newLeft);
+        ////        dragNodeView.SetValue(Canvas.TopProperty, newTop);
+
+        ////        dragNodeModel.Position = new GraphPosition(newLeft, newTop, dragNodeModel.Position.Z);
+        ////        controller.RaiseNodeMoved(dragNodeModel); // or your existing event raiser
+        ////    }
+        ////}
+
+        ////public void HandleCanvasPointerReleased(PointerReleasedEventArgs e)
+        ////{
+        ////    if (canvas is null) return;
+
+        ////    if (rubber != null)
+        ////    {
+        ////        var pt = e.GetPosition(canvas);
+        ////        var target = HitTestNode(pt);
+        ////        if (target is null) { CancelEdgeDrag(); return; }
+        ////        var view = nodeViews[target.Id];
+        ////        var local = canvas.TranslatePoint(pt, view);
+        ////        if (local is null) { CancelEdgeDrag(); return; }
+        ////        bool targetIsInputSide = local.Value.X < view.Bounds.Width / 2.0;
+        ////        CompleteEdgeDragOverNode(target, pt, targetIsInputSide);
+        ////        return;
+        ////    }
+
+        ////    // finish node drag
+        ////    dragNodeView = null;
+        ////    dragNodeModel = null;
+        ////}
+
+        // ─────────────────────────────────────────────────────────
+        // Edge Dragging: Public API if you prefer calling directly from the control
         // ─────────────────────────────────────────────────────────
         public void StartEdgeDrag(GraphNode node, NodePin pin, Point startCanvasPt)
         {

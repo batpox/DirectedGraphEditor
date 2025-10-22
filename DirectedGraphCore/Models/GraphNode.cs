@@ -110,6 +110,10 @@ public class GraphNode : ObservableObject
         => Inputs.FirstOrDefault(p => p.Id == pinId)
         ?? Outputs.FirstOrDefault(p => p.Id == pinId);
 
+    // ...
+    public NodePin? FindPinById(string pinId)
+        => Inputs.Concat(Outputs).FirstOrDefault(p => p.Id == pinId);
+
     /// <summary>All pins on this node (inputs first, then outputs).</summary>
     public IEnumerable<NodePin> AllPins()
         => Inputs.Concat(Outputs);

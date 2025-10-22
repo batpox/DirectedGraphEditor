@@ -25,8 +25,8 @@
     <Setter Property="VerticalAlignment"   Value="Center"/>
   </Style>
 
-  <!-- Lock hover to the same look (avoid shimmer) -->
-  <Style Selector="local|GraphNodeControl Border.nodeBody:pointerover">
+  <!-- hover only when *NOT* pressed -->
+  <Style Selector="local|GraphNodeControl Border.nodeBody:pointerover:not(:pressed)">
     <Setter Property="Background"  Value="#333333"/>  <!-- subtle -->
     <Setter Property="BorderBrush" Value="#19e5ff"/>
   </Style>
