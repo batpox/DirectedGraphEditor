@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using DirectedGraphCore.Geometry;
 
 namespace DirectedGraphCore.Models;
 
@@ -19,14 +20,14 @@ public class GraphNode : ObservableObject
         set => SetProperty(ref name, value);
     }
 
-    private GraphPosition position;
-    public GraphPosition Position
+    private Point3 position;
+    public Point3 Position
     {
         get => position;
         set => SetProperty(ref position, value);
     }
 
-    public GraphSize? Size { get; set; }
+    public Size3? Size { get; set; }
 
     /// <summary>Pins rendered on the left (incoming).</summary>
     public ObservableCollection<NodePin> Inputs { get; } = new();
@@ -38,7 +39,7 @@ public class GraphNode : ObservableObject
     {
         Id = id;
         this.name = name;
-        position = new GraphPosition(0, 0, 0);
+        position = new Point3(0, 0, 0);
     }
 
     // --------------------------

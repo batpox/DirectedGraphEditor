@@ -1,5 +1,5 @@
-﻿using DirectedGraphCore.Models;
-using System.Numerics;
+﻿using DirectedGraphCore.Geometry;
+using DirectedGraphCore.Models;
 
 namespace DirectedGraphCore.Controllers
 {
@@ -14,6 +14,8 @@ namespace DirectedGraphCore.Controllers
 
         public event Action<GraphEdge>? EdgeAdded;
         public event Action<GraphEdge>? EdgeRemoved;
+        public event Action<GraphNode>? EdgeMoved;
+
         public event Action? SelectionChanged;
         public event Action? GraphReset;
         public event Action? GraphResetCompleted;
@@ -24,12 +26,23 @@ namespace DirectedGraphCore.Controllers
         public GraphController(GraphModel model) => Model = model;
 
         // ─── Node Ops ────────────────────────────────────────────
-        public GraphNode AddNode(string id, string name, GraphPosition position)
+        public GraphNode AddNode(string id, string name, Point3 position)
         {
             var node = new GraphNode(id, name) { Position = position };
             Model.Nodes.Add(id, node);
             OnNodeAdded(node);
             return node;
+        }
+
+        // Centralized way to change a node’s position and raise the event.
+        public void SetNodePosition(GraphNode node, Point3 position)
+        {
+            if (node is null) return;
+            if ( GeometryHelpers.NearEquals(node.Position, position)) 
+                return;
+
+            node.Position = position;
+            NodeMoved?.Invoke(node); // your existing event; keep policy localized here
         }
 
         public void RemoveNode(GraphNode node)
@@ -50,6 +63,9 @@ namespace DirectedGraphCore.Controllers
             Model.Nodes.Remove(node.Id);
             OnNodeRemoved(node);
         }
+
+
+
 
         // ─── Edge Ops ────────────────────────────────────────────
         // Preferred: pass IDs directly
@@ -89,9 +105,10 @@ namespace DirectedGraphCore.Controllers
         {
             foreach (var node in selectedNodes)
             {
-                node.Position = new GraphPosition(
+                node.Position = new Point3(
                     node.Position.X + delta.X,
-                    node.Position.Y + delta.Y, 0);
+                    node.Position.Y + delta.Y,
+                    0);
                 OnNodeMoved(node);
             }
         }
@@ -161,9 +178,12 @@ namespace DirectedGraphCore.Controllers
         // ─── Event raisers ───────────────────────────────────────
         protected virtual void OnNodeAdded(GraphNode node) => NodeAdded?.Invoke(node);
         protected virtual void OnNodeRemoved(GraphNode node) => NodeRemoved?.Invoke(node);
+        protected virtual void OnNodeMoved(GraphNode node) => NodeMoved?.Invoke(node);
+
         protected virtual void OnEdgeAdded(GraphEdge edge) => EdgeAdded?.Invoke(edge);
         protected virtual void OnEdgeRemoved(GraphEdge edge) => EdgeRemoved?.Invoke(edge);
+        protected virtual void OnEdgeMoved(GraphNode node) => EdgeMoved?.Invoke(node);
+
         protected virtual void OnSelectionChanged() => SelectionChanged?.Invoke();
-        protected virtual void OnNodeMoved(GraphNode node) => NodeMoved?.Invoke(node);
     }
 }

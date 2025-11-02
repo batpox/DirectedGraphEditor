@@ -4,14 +4,17 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:editor="clr-namespace:DirectedGraphEditor.Pages.Editor"
-    xmlns:nodes="clr-namespace:DirectedGraphEditor.Controls.GraphNodeControl"
+    xmlns:nodes="clr-namespace:DirectedGraphEditor.Controls.NodeControl"
     mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-    x:Class="DirectedGraphEditor.Pages.Editor.EditorPageView"
-    x:DataType="editor:EditorPageViewModel">
+    x:Class="DirectedGraphEditor.Pages.Editor.EditorPageView" >
 
+    <!--
   <Design.DataContext>
     <editor:EditorPageViewModel />
   </Design.DataContext>
+  -->
+
+    <!--
 
   <UserControl.Styles>
 
@@ -42,6 +45,7 @@
               Value="Orange" />
     </Style>
   </UserControl.Styles>
+  -->
 
   <DockPanel>
     <Menu DockPanel.Dock="Top">
@@ -57,11 +61,7 @@
   <Canvas x:Name="GraphCanvas"
         Background="Transparent" 
         Width="1000"
-        Height="800"
-        PointerPressed="OnCanvasPointerPressed"
-        PointerMoved="OnCanvasPointerMoved"
-        PointerReleased="OnCanvasPointerReleased"
-        Loaded="OnLoaded">
+        Height="800">
 
 
     <!-- Rubber-banding line 

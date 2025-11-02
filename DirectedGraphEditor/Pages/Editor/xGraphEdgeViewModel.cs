@@ -1,16 +1,16 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using DirectedGraphEditor.Controls.GraphNodeControl;
+using DirectedGraphEditor.Controls.NodeControl;
 using Avalonia;
 using System.ComponentModel;
 
 namespace DirectedGraphEditor.Pages.Editor;
 
-public sealed class GraphEdgeViewModel : ObservableObject
+public sealed class xGraphEdgeViewModel : ObservableObject
 {
     public GraphEdge Edge { get; } // link to model edge
 
-    public GraphNodeViewModel SourceNode { get; set; }
-    public GraphNodeViewModel TargetNode { get; set; }
+    public NodeViewModel SourceNode { get; set; }
+    public NodeViewModel TargetNode { get; set; }
     public int SourceOutputIndex { get; set; }
     public int TargetInputIndex { get; set; }
 
@@ -23,10 +23,10 @@ public sealed class GraphEdgeViewModel : ObservableObject
     private const double RowStartY = 8;
     private const double RowPitch = 12;
 
-    public GraphEdgeViewModel(
+    public xGraphEdgeViewModel(
         GraphEdge edge,
-        GraphNodeViewModel source, int sourceOutputIndex,
-        GraphNodeViewModel target, int targetInputIndex )
+        NodeViewModel source, int sourceOutputIndex,
+        NodeViewModel target, int targetInputIndex )
     {
         Edge = edge;
         SourceNode = source;
@@ -53,7 +53,7 @@ public sealed class GraphEdgeViewModel : ObservableObject
         }
     }
 
-    public void UpdateSource(GraphNodeViewModel newSource, int newPinIndex)
+    public void UpdateSource(NodeViewModel newSource, int newPinIndex)
     {
         SourceNode.PropertyChanged -= OnPositionChanged;
         SourceNode = newSource;
@@ -62,7 +62,7 @@ public sealed class GraphEdgeViewModel : ObservableObject
         NotifyEndpointsChanged();
     }
 
-    public void UpdateTarget(GraphNodeViewModel newTarget, int newPinIndex)
+    public void UpdateTarget(NodeViewModel newTarget, int newPinIndex)
     {
         TargetNode.PropertyChanged -= OnPositionChanged;
         TargetNode = newTarget;

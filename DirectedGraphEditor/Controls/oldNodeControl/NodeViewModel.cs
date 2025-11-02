@@ -2,9 +2,9 @@
 using DirectedGraphCore.Models;
 using System.Collections.Generic;
 
-namespace DirectedGraphEditor.Controls.GraphNodeControl;
+namespace DirectedGraphEditor.Controls.OldNodeControl;
 
-public sealed class GraphNodeViewModel : ObservableObject
+public sealed class NodeViewModel : ObservableObject
 {
     private float _x;
     private float _y;
@@ -17,7 +17,7 @@ public sealed class GraphNodeViewModel : ObservableObject
     public GraphNode Node { get; }
     public string Name => Node.Name;
 
-    public GraphNodeViewModel(GraphNode node)
+    public NodeViewModel(GraphNode node)
     {
         Node = node; // reference the model node
         _x = node.Position.X;

@@ -9,9 +9,9 @@ using DirectedGraphCore.Models;
 using System;
 using System.Linq;
 
-namespace DirectedGraphEditor.Controls.GraphNodeControl;
+namespace DirectedGraphEditor.Controls.OldNodeControl;
 
-public partial class GraphNodeControl : UserControl
+public partial class OldNodeControl : UserControl
 {
     // Public events the adapter subscribes to:
     public event EventHandler<PinEventArgs>? PinDown;
@@ -23,7 +23,7 @@ public partial class GraphNodeControl : UserControl
     public Ellipse sourcePin => this.FindControl<Ellipse>("SourcePin");
     public Ellipse targetPin => this.FindControl<Ellipse>("TargetPin");
 
-    public GraphNodeControl()
+    public OldNodeControl()
     {
         InitializeComponent();
 
@@ -33,7 +33,7 @@ public partial class GraphNodeControl : UserControl
     }
 
     public static readonly StyledProperty<bool> IsSelectedProperty =
-            AvaloniaProperty.Register<GraphNodeControl, bool>(
+            AvaloniaProperty.Register<OldNodeControl, bool>(
                 nameof(IsSelected), defaultValue: false);
 
     public bool IsSelected

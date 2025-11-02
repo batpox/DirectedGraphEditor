@@ -36,14 +36,22 @@
   </ItemGroup>
   
   <ItemGroup>
+    <AvaloniaXaml Remove="Controls\oldNodeControl\**" />
     <AvaloniaXaml Remove="xxViewModels\**" />
     <AvaloniaXaml Remove="xxViews\**" />
+    <Compile Remove="Controls\oldNodeControl\**" />
     <Compile Remove="xxViewModels\**" />
     <Compile Remove="xxViews\**" />
+    <EmbeddedResource Remove="Controls\oldNodeControl\**" />
     <EmbeddedResource Remove="xxViewModels\**" />
     <EmbeddedResource Remove="xxViews\**" />
+    <None Remove="Controls\oldNodeControl\**" />
     <None Remove="xxViewModels\**" />
     <None Remove="xxViews\**" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Compile Remove="Pages\Editor\xGraphEdgeViewModel.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -74,7 +82,6 @@
 
   <ItemGroup>
     <Folder Include="Assets\Icons\" />
-    <Folder Include="Rendering\" />
   </ItemGroup>
 
 

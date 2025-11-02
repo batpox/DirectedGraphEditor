@@ -2,13 +2,13 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:vm="clr-namespace:DirectedGraphEditor.Controls.GraphNodeControl"
+    xmlns:vm="clr-namespace:DirectedGraphEditor.Controls.OldNodeControl"
     xmlns:panels="clr-namespace:DirectedGraphEditor.Controls.Panels"   
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
     xmlns:core="clr-namespace:DirectedGraphCore.Models;assembly=DirectedGraphCore"
     x:DataType="core:GraphNode"
-    x:Class="DirectedGraphEditor.Controls.GraphNodeControl.GraphNodeControl">
+    x:Class="DirectedGraphEditor.Controls.OldNodeControl.OldNodeControl">
 
 
     <Grid MinWidth="120" Height="60" ColumnDefinitions="16,*,16">
@@ -100,8 +100,8 @@
     mc:Ignorable="d" d:DesignWidth="200" d:DesignHeight="250"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:vm="clr-namespace:DirectedGraphEditor.Controls.GraphNodeControl.GraphNodeControl"
-  xmlns:vm="clr-namespace:DirectedGraphEditor.Controls.GraphNodeControl.GraphNodeControl"
+    xmlns:vm="clr-namespace:DirectedGraphEditor.Controls.OldNodeControl.OldNodeControl"
+  xmlns:vm="clr-namespace:DirectedGraphEditor.Controls.OldNodeControl.OldNodeControl"
   x:DataType="vm:GraphNodeViewModel"
 
 -->

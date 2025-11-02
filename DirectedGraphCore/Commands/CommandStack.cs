@@ -8,10 +8,10 @@ public sealed class CommandStack
     public bool CanUndo => undo.Count > 0;
     public bool CanRedo => redo.Count > 0;
 
-    public void Exec(IUndoable cmd)
+    public void Exec(IUndoable command)
     {
-        cmd.Do();
-        undo.Push(cmd);
+        command.Do();
+        undo.Push(command);
         redo.Clear();
     }
 

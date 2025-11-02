@@ -2,9 +2,9 @@
 using Avalonia;
 using DirectedGraphCore.Models;
 
-namespace DirectedGraphEditor.Controls.GraphNodeControl;
+namespace DirectedGraphEditor.Controls.OldNodeControl;
 
-public sealed class PinEventArgs : EventArgs
+public sealed class OldPinEventArgs : EventArgs
 {
     public GraphNode Node { get; }
     public NodePin Pin { get; }

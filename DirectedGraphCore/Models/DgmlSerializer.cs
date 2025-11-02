@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using DirectedGraphCore.Geometry;
+using System.Globalization;
 using System.Reflection;
 using System.Xml;
 using System.Xml.Linq;
@@ -74,7 +75,7 @@ public static class DgmlSerializer
             // Here we could look at node.Inputs/Outputs pins if you want per-pin geometry,
             // but for now treat node itself as having layout.
             ////var pos = node.Inputs.FirstOrDefault()?.Position ?? new GraphPosition(0, 0, 0);
-            var size = node.Inputs.FirstOrDefault()?.Size ?? new GraphSize(0, 0, 0);
+            var size = node.Inputs.FirstOrDefault()?.Size ?? new Size3(0, 0, 0);
 
             writer.WriteStartElement("Node");
             writer.WriteAttributeString("Id", node.Id);
@@ -139,7 +140,7 @@ public static class DgmlSerializer
                         gNode.Inputs.Add(new NodePin(0, EnumNodePinDirection.Input, gNode)
                         {
                             ////Position = new GraphPosition(x, y, 0),
-                            Size = new GraphSize(w, h, 0)
+                            Size = new Size3(w, h, 0)
                         });
                     }
                 } // check for Bounds
@@ -193,7 +194,7 @@ public static class DgmlSerializer
                     if (!string.IsNullOrEmpty(posAttr))
                     {
                         var parts = posAttr.Split(',');
-                        gnode.Position = new GraphPosition(
+                        gnode.Position = new Point3(
                             float.Parse(parts[0], CultureInfo.InvariantCulture),
                             float.Parse(parts[1], CultureInfo.InvariantCulture),
                             parts.Length > 2 ? float.Parse(parts[2]) : 0);
@@ -204,10 +205,10 @@ public static class DgmlSerializer
                     if (!string.IsNullOrEmpty(sizeAttr))
                     {
                         var parts = sizeAttr.Split(',');
-                        gnode.Size = new GraphSize(
-                            double.Parse(parts[0]),
-                            double.Parse(parts[1]),
-                            parts.Length > 2 ? double.Parse(parts[2]) : 0);
+                        gnode.Size = new Size3(
+                            float.Parse(parts[0]),
+                            float.Parse(parts[1]),
+                            parts.Length > 2 ? float.Parse(parts[2]) : 0);
                     }
 
                     // Pins

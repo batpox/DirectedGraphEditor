@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using DirectedGraphCore.Geometry;
+using System.Text.Json.Serialization;
 
 namespace DirectedGraphCore.Models;
 
@@ -23,7 +24,7 @@ public class NodePin
     public int Capacity { get; set; } = 1;
 
     /// <summary>Visual size.</summary>
-    public GraphSize Size { get; set; } = new(0.1, 0.1, 0.1);
+    public Size3 Size { get; set; } = new(0.1f, 0.1f, 0.1f);
 
     /// <summary>Owning node ID (stable for persistence).</summary>
     public string NodeId { get; }
