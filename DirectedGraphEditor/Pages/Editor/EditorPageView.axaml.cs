@@ -41,7 +41,24 @@ public partial class EditorPageView : UserControl
         AttachedToVisualTree += OnAttachedToVisualTree;
         DetachedFromVisualTree += OnDetachedFromVisualTree;
 
+        // Wire lifecycle
+        AttachedToVisualTree += OnAttachedToVisualTree;
+        DetachedFromVisualTree += OnDetachedFromVisualTree;
+
+        // Wire menu actions in code (no XAML changes required)
+        var openMi = this.FindControl<MenuItem>("OpenMenuItem");
+        if (openMi != null)
+            openMi.Click += OnOpenGraph;
+
+        var saveMi = this.FindControl<MenuItem>("SaveMenuItem");
+        if (saveMi != null)
+            saveMi.Click += OnSaveGraph;
+
+        var saveAsMi = this.FindControl<MenuItem>("SaveAsMenuItem");
+        if (saveAsMi != null)
+            saveAsMi.Click += OnSaveGraphAs;
     }
+
 
 
     private void OnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
@@ -83,9 +100,9 @@ public partial class EditorPageView : UserControl
 
         adapter.WireCanvasToDragController(drag: _drag );
 
-        // Create adapter when the view is ready to render
-        this.AttachedToVisualTree += OnAttachedToVisualTree;
-        this.DetachedFromVisualTree += OnDetachedFromVisualTree;
+        ////// Create adapter when the view is ready to render
+        ////this.AttachedToVisualTree += OnAttachedToVisualTree;
+        ////this.DetachedFromVisualTree += OnDetachedFromVisualTree;
 
         WireModelEvents(controller);
 
@@ -120,6 +137,7 @@ public partial class EditorPageView : UserControl
         controller.EdgeRemoved -= OnEdgeRemoved;
         // controller.EdgeChanged -= OnEdgeChanged;
     }
+
     // Paint helpers
     private void PaintAll()
     {
@@ -133,17 +151,6 @@ public partial class EditorPageView : UserControl
     }
 
 
-
-
-    ////// ─── Canvas event hooks ───────────────────────────────────────
-    ////private void OnCanvasPointerPressed(object? sender, PointerPressedEventArgs e)
-    ////    => _ec.Adapter?.HandleCanvasPointerPressed(e);
-
-    ////private void OnCanvasPointerMoved(object? sender, PointerEventArgs e)
-    ////    => _ec.Adapter?.HandleCanvasPointerMoved(e);
-
-    ////private void OnCanvasPointerReleased(object? sender, PointerReleasedEventArgs e)
-    ////    => _ec.Adapter?.HandleCanvasPointerReleased(e);
 
 
     // ───────────────────────── Model → View (through adapter) ─────────────────────────
@@ -174,69 +181,6 @@ public partial class EditorPageView : UserControl
         _ec.Adapter.RemoveEdgeView(edgeId: edge.Id);
     }
 
-    // If present in your controller:
-    // private void OnEdgeChanged(GraphEdge edge) => CreateOrUpdateEdgeView(edge);
-
-
-
-    ////private void OnLoaded(object? sender, RoutedEventArgs e)
-    ////{
-    ////    if (GraphCanvas.Background is null) 
-    ////        GraphCanvas.Background = Brushes.Transparent;
-
-    ////    _ec.Adapter.HandleCanvasLoaded(GraphCanvas);
-
-    ////    // If model already has nodes (e.g., after you called ReloadFrom), paint them:
-    ////    foreach (var node in _mc.Controller.Model.Nodes.Values)
-    ////        OnNodeAdded(node);
-
-    ////    // NOW initialize the DragController — after nodeViews and edgeLines have been created.
-    ////    // Ensure AvaloniaGraphAdapter exposes InitializeDragController(Canvas)
-    ////    _ec.Adapter.WireCanvasToDragController(GraphCanvas);
-    ////}
-
-
-    ////private void OnNodeAdded(GraphNode node)
-    ////{
-    ////    var view = new NodeControl { DataContext = node };
-    ////    // position the control using the model Position:
-    ////    view.SetValue(Canvas.LeftProperty, node.Position.X);
-    ////    view.SetValue(Canvas.TopProperty, node.Position.Y);
-    ////    // optional size if you persist it:
-    ////    if (node.Size is GraphSize s) { view.Width = s.Width; view.Height = s.Height; }
-
-    ////    // put it on top and add to canvas
-    ////    view.SetValue(Panel.ZIndexProperty, 100);
-    ////    GraphCanvas.Children.Add(view);
-
-    ////    // let the adapter know so drag/snap works
-    ////    _ec.Adapter.RegisterView(node, view);
-    ////}
-
-    ////private void OnNodeRemoved(GraphNode node)
-    ////{
-    ////    // find the view by DataContext (or keep a map if you prefer)
-    ////    var toRemove = GraphCanvas.Children
-    ////        .OfType<NodeControl>()
-    ////        .FirstOrDefault(v => ReferenceEquals(v.DataContext, node));
-    ////    if (toRemove != null)
-    ////    {
-    ////        _ec.Adapter.UnregisterView(node);
-    ////        GraphCanvas.Children.Remove(toRemove);
-    ////    }
-    ////}
-
-    ////private void OnNodeMoved(GraphNode node)
-    ////{
-    ////    var view = GraphCanvas.Children
-    ////        .OfType<NodeControl>()
-    ////        .FirstOrDefault(v => ReferenceEquals(v.DataContext, node));
-    ////    if (view != null)
-    ////    {
-    ////        view.SetValue(Canvas.LeftProperty, node.Position.X);
-    ////        view.SetValue(Canvas.TopProperty, node.Position.Y);
-    ////    }
-    ////}
 
     // ─────────────────────────────────────────────────────────────────────────────
     // View creation / updates
@@ -325,6 +269,17 @@ public partial class EditorPageView : UserControl
 
         return new Point(x: px, y: py);
     }
+    ////private async void OnOpenGraph(object? sender, RoutedEventArgs e)
+    ////{
+    ////    var top = TopLevel.GetTopLevel(this);
+    ////    if (top is null) return;
+
+    ////    var path = await _fileDialogs.ShowOpenGraphAsync(top);
+    ////    if (string.IsNullOrWhiteSpace(path)) return;
+
+    ////    var gm = await _persistence.LoadDgmlAsync(path);
+    ////    _mc.Controller.ReloadFrom(gm);
+    ////}
     private async void OnOpenGraph(object? sender, RoutedEventArgs e)
     {
         var top = TopLevel.GetTopLevel(this);
@@ -333,11 +288,66 @@ public partial class EditorPageView : UserControl
         var path = await _fileDialogs.ShowOpenGraphAsync(top);
         if (string.IsNullOrWhiteSpace(path)) return;
 
+        // If DataContext is the VM, prefer MVVM path: set CurrentFile and invoke LoadGraphCommand
+        if (this.DataContext is EditorPageViewModel vm)
+        {
+            vm.CurrentFile = path;
+
+            if (vm.LoadGraphCommand is ICommand loadCmd && loadCmd.CanExecute(null))
+            {
+                loadCmd.Execute(null);
+                return;
+            }
+        }
+
+        // Fallback: direct persistence -> controller (keeps previous behavior)
         var gm = await _persistence.LoadDgmlAsync(path);
-        _mc.Controller.ReloadFrom(gm);
+        _mc?.Controller.ReloadFrom(gm);
     }
 
+
     private async void OnSaveGraph(object? sender, RoutedEventArgs e)
+    {
+        // Prefer VM command path when DataContext is set
+        if (this.DataContext is EditorPageViewModel vm)
+        {
+            // If VM already has a file, call SaveGraphCommand
+            if (!string.IsNullOrWhiteSpace(vm.CurrentFile))
+            {
+                if (vm.SaveGraphCommand is ICommand saveCmd && saveCmd.CanExecute(null))
+                {
+                    saveCmd.Execute(null);
+                    return;
+                }
+            }
+
+            // Otherwise show Save dialog and call SaveGraphAsCommand if available
+            var top = TopLevel.GetTopLevel(this);
+            if (top is null) return;
+
+            var path = await _fileDialogs.ShowSaveGraphAsync(top);
+            if (string.IsNullOrWhiteSpace(path)) return;
+
+            if (vm.SaveGraphAsCommand is ICommand saveAsCmd && saveAsCmd.CanExecute(path))
+            {
+                saveAsCmd.Execute(path);
+                return;
+            }
+
+            // Fallback: use persistence directly
+            await _persistence.SaveDgmlAsync(_mc!.Controller.Model, path);
+            _mc.Controller.Model.FilePath = path;
+            return;
+        }
+    }
+
+
+    ////private async void OnSaveGraphAs(object? sender, RoutedEventArgs e)
+    ////{
+
+    ////}
+
+    private async void OnSaveGraphAs(object? sender, RoutedEventArgs e)
     {
         var top = TopLevel.GetTopLevel(this);
         if (top is null) return;
@@ -345,14 +355,29 @@ public partial class EditorPageView : UserControl
         var path = await _fileDialogs.ShowSaveGraphAsync(top);
         if (string.IsNullOrWhiteSpace(path)) return;
 
-        await _persistence.SaveDgmlAsync(_mc.Controller.Model, path);
+        // Prefer MVVM path when DataContext is the VM
+        if (this.DataContext is EditorPageViewModel vm)
+        {
+            if (vm.SaveGraphAsCommand is ICommand saveAsCmd && saveAsCmd.CanExecute(path))
+            {
+                saveAsCmd.Execute(path);
+                return;
+            }
+
+            // Otherwise, set CurrentFile and invoke SaveGraph
+            vm.CurrentFile = path;
+            if (vm.SaveGraphCommand is ICommand saveCmd && saveCmd.CanExecute(null))
+            {
+                saveCmd.Execute(null);
+                return;
+            }
+        }
+
+        // Fallback to direct persistence
+        await _persistence.SaveDgmlAsync(_mc!.Controller.Model, path);
         _mc.Controller.Model.FilePath = path;
     }
 
-    private async void OnSaveGraphAs(object? sender, RoutedEventArgs e)
-    {
-
-    }
 
     private async Task<string?> ShowOpenDialogAsync()
     {
