@@ -63,7 +63,7 @@ public readonly struct Size2
 {
     public float Width { get; }
     public float Height { get; }
-    public Size2(object value, float width, float height) { Width = width; Height = height; }
+    public Size2(float width, float height) { Width = width; Height = height; }
     public void Deconstruct(out float w, out float h) { w = Width; h = Height; }
     public override string ToString() => $"{Width:0.###}×{Height:0.###}";
 }
@@ -72,7 +72,7 @@ public readonly struct Size3
     public float Width { get; }
     public float Height { get; }
     public float Depth { get; }
-    public Size3(object value, float width, float height, float depth = 0) { Width = width; Height = height; Depth = depth; }
+    public Size3(float width, float height, float depth = 0) { Width = width; Height = height; Depth = depth; }
     public void Deconstruct(out float w, out float h, out float d ) { w = Width; h = Height; d = Depth; }
     public override string ToString() => $"{Width:0.###}×{Height:0.###}×{Depth:0.###}";
 }
