@@ -254,12 +254,12 @@ public partial class EditorPageView : UserControl
         var p0 = ResolvePinCanvasPoint(
             nodeId: edge.SourceNodeId,
             pinId: edge.SourcePinId,
-            defaultSide: -1);
+            defaultSide: +1);
 
         var p1 = ResolvePinCanvasPoint(
             nodeId: edge.TargetNodeId,
             pinId: edge.TargetPinId,
-            defaultSide: +1);
+            defaultSide: -1);
 
         if (_ec.EdgeViews.ContainsKey(edge.Id))
         {
@@ -273,15 +273,30 @@ public partial class EditorPageView : UserControl
 
     private Point ResolvePinCanvasPoint(string nodeId, string pinId, int defaultSide)
     {
-        if (_ec is null) return new Point(0, 0);
+        if (_ec is null) 
+            return new Point(x:0, y:0);
         if (!_ec.NodeViews.TryGetValue(nodeId, out var nodeView))
-            return new Point(0, 0);
+            return new Point(x:0, y:0);
 
-        var left = Avalonia.Controls.Canvas.GetLeft(nodeView);
-        var top = Avalonia.Controls.Canvas.GetTop(nodeView);
+        // Canvas.Left/Top may be NaN if not set by layout; guard.
+        var left = Canvas.GetLeft(nodeView);
+        if (double.IsNaN(left)) left = 0;
+        var top = Canvas.GetTop(nodeView);
+        if (double.IsNaN(top)) top = 0;
 
-        var px = defaultSide < 0 ? left : left + nodeView.Bounds.Width;
-        var py = top + nodeView.Bounds.Height / 2;
+        // Prefer actual laid-out bounds; fall back to explicit Width/Height if layout hasn't run yet.
+        var width = nodeView.Bounds.Width;
+        if (double.IsNaN(width) || width <= 0) width = nodeView.Width;
+        var height = nodeView.Bounds.Height;
+        if (double.IsNaN(height) || height <= 0) height = nodeView.Height;
+
+        // If still zero for some reason, use a sensible default so anchors are not at (0,0)
+        if (width <= 0) width = 140;
+        if (height <= 0) height = 60;
+
+        // Default: mid-left or mid-right of the node card
+        var px = defaultSide < 0 ? left : left + width;
+        var py = top + height / 2;
 
         return new Point(px, py);
     }

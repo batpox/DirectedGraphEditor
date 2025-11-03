@@ -5,7 +5,9 @@ using Avalonia.Input;
 using DirectedGraphCore.Commands;        // CommandStack, CompositeCommand, RemoveEdgeCommand, AddEdgeCommand, InsertPinCommand
 using DirectedGraphCore.Geometry;
 using DirectedGraphCore.Models;          // GraphNode, GraphEdge
+using DirectedGraphEditor.Controls;
 using DirectedGraphEditor.Helpers;
+using System.Collections.Generic;
 using System.Runtime.InteropServices.Marshalling;
 using static DirectedGraphCore.Commands.UndoCommands;
 
@@ -75,7 +77,11 @@ public sealed class DragController : IDragController
 
     public void HandleCanvasPointerPressed(PointerPressedEventArgs e)
     {
-        var pos = e.GetPosition(relativeTo: null); // canvas space
+        if (_ec?.Canvas == null) 
+            return;
+        var canvas = _ec.Canvas;
+
+        var pos = e.GetPosition(relativeTo: canvas); // canvas space
         e.Handled = false;
 
         // 1) Prefer grabbing an edge endpoint
@@ -96,6 +102,16 @@ public sealed class DragController : IDragController
             // Show rubber from fixed to mouse
             _ec.Rubber.ShowRubber(startCanvas: _edgeDrag.FixedEndCanvas, endCanvas: pos);
 
+            e.Handled = true;
+            return;
+        }
+
+        // 1.5) Check for edge *segment* hit (middle of edge). If clicked near a segment, prefer edge selection
+        var seg = FindTopmostEdgeUnderPoint(pos, EdgeHitDistance);
+        if (seg is { } segHit)
+        {
+            // select the edge visually and do not fall through to node selection
+            _ec.Adapter.SetSelected(nodeId: null, edgeId: segHit.EdgeId, selected: true);
             e.Handled = true;
             return;
         }
@@ -127,11 +143,51 @@ public sealed class DragController : IDragController
         e.Handled = false;
     }
 
+    /// <summary>
+    /// Find the visually topmost edge under the canvas point (by ZIndex then canvas child index).
+    /// Returns null when none within hitRadius.
+    /// </summary>
+    private (EdgeControl View, string EdgeId)? FindTopmostEdgeUnderPoint(Point canvasPt, double hitRadius)
+    {
+        if (_ec is null) return null;
+
+        // Build ordered list from EdgeViews
+        var ordered = new List<(string Id, EdgeControl View)>(_ec.EdgeViews.Count);
+        foreach (var kv in _ec.EdgeViews)
+            ordered.Add((kv.Key, kv.Value));
+
+        ordered.Sort((a, b) =>
+        {
+            var zaObj = a.View.GetValue(Panel.ZIndexProperty);
+            var zbObj = b.View.GetValue(Panel.ZIndexProperty);
+            int za = zaObj is int ia ? ia : 0;
+            int zb = zbObj is int ib ? ib : 0;
+            if (za != zb) return zb.CompareTo(za); // higher ZIndex first
+
+            int iaIndex = _ec.Canvas.Children.IndexOf(a.View);
+            int ibIndex = _ec.Canvas.Children.IndexOf(b.View);
+            return ibIndex.CompareTo(iaIndex);
+        });
+
+        foreach (var item in ordered)
+        {
+            var view = item.View;
+            if (view is null) continue;
+            if (view.HitNearSegment(canvasPt, hitRadius))
+                return (view, item.Id);
+        }
+
+        return null;
+    }
+
     public void HandleCanvasPointerMoved(PointerEventArgs e)
     {
-        if (_dragKind == DragKind.None) return;
+        if (_dragKind == DragKind.None || _ec?.Canvas == null)
+            return;
 
-        var pos = e.GetPosition(relativeTo: null);
+        var canvas = _ec.Canvas;
+        // Use canvas coordinate space consistently
+        var pos = e.GetPosition(relativeTo: canvas);
 
         switch (_dragKind)
         {
@@ -147,6 +203,16 @@ public sealed class DragController : IDragController
 
                         // Optional: live edge endpoint updates if you maintain anchors dynamically
                         // (Usually you'd let model changes drive these after commit.)
+                        // Live-update all incident edges so they follow as the node is dragged.
+                        foreach (var edge in _mc.Model.Edges.Values)
+                        {
+                            if (edge.SourceNodeId == _nodeDrag.NodeId || edge.TargetNodeId == _nodeDrag.NodeId)
+                            {
+                                var p0 = ResolvePinCanvasPoint(edge.SourceNodeId, defaultSide: +1); // source → right
+                                var p1 = ResolvePinCanvasPoint(edge.TargetNodeId, defaultSide: -1); // target → left
+                                _ec.Adapter.UpdateEdgePoints(edge.Id, p0, p1);
+                            }
+                        }
                     }
                     e.Handled = true;
                     break;
@@ -161,10 +227,38 @@ public sealed class DragController : IDragController
                 }
         }
     }
+    // Helper: mirror the same anchor calculation used elsewhere (fallback-safe)
+    private Point ResolvePinCanvasPoint(string nodeId, int defaultSide)
+    {
+        if (_ec is null) return new Point(0, 0);
+        if (!_ec.NodeViews.TryGetValue(nodeId, out var nodeView)) 
+            return new Point(0, 0);
+
+        var left = Canvas.GetLeft(nodeView);
+        if (double.IsNaN(left)) left = 0;
+        var top = Canvas.GetTop(nodeView);
+        if (double.IsNaN(top)) top = 0;
+
+        var width = nodeView.Bounds.Width;
+        if (double.IsNaN(width) || width <= 0) width = nodeView.Width;
+        var height = nodeView.Bounds.Height;
+        if (double.IsNaN(height) || height <= 0) height = nodeView.Height;
+
+        if (width <= 0) width = 140;
+        if (height <= 0) height = 60;
+
+        var px = defaultSide > 0 ? left + width : left;
+        var py = top + height / 2;
+        return new Point(px, py);
+    }
 
     public void HandleCanvasPointerReleased(PointerReleasedEventArgs e)
     {
-        var pos = e.GetPosition(relativeTo: null);
+        if (_ec?.Canvas == null) return;
+        var canvas = _ec.Canvas;
+
+        // Use canvas space for final position
+        var pos = e.GetPosition(relativeTo: canvas);
 
         switch (_dragKind)
         {

@@ -154,18 +154,63 @@ public sealed class GraphAdapter : IHitTester, IPinResolver, IRubberHost
     }
 
     // ----- IHitTester (uses the owned visuals so results match what’s on screen)
+    ////public (NodeControl View, string NodeId)? NodeUnderPoint(Point canvasPt)
+    ////{
+    ////    // Iterate in reverse z-order so “topmost” wins
+    ////    for (int ii = _canvas.Children.Count - 1; ii >= 0; ii--)
+    ////    {
+    ////        if (_canvas.Children[ii] is not NodeControl nc)
+    ////            continue;
+    ////        var id = FindNodeIdByView(nc);
+    ////        if (id is null) 
+    ////            continue;
+
+    ////        // Use the control's own hit-test which respects rounded rect / visual shape
+    ////        if (nc.Hit(canvasPt, _canvas))
+    ////            return (nc, id);
+
+    ////        ////var ptLocal = _canvas.TranslatePoint(canvasPt, nc) ?? canvasPt;
+    ////        ////if (new Rect(nc.Bounds.Size).Contains(ptLocal))
+    ////        ////    return (nc, id);
+    ////    }
+    ////    return null;
+    ////}
     public (NodeControl View, string NodeId)? NodeUnderPoint(Point canvasPt)
     {
-        // Iterate in reverse z-order so “topmost” wins
-        for (int i = _canvas.Children.Count - 1; i >= 0; i--)
+        // Iterate NodeViews in visual top-to-bottom order:
+        // 1) by Panel.ZIndex (higher first), 2) by canvas child index (higher wins)
+        var ordered = new List<(string Id, NodeControl View)>(NodeViews.Count);
+        foreach (var kv in NodeViews)
+            ordered.Add((kv.Key, kv.Value));
+
+        ordered.Sort((a, b) =>
         {
-            if (_canvas.Children[i] is not NodeControl nc) continue;
-            var id = FindNodeIdByView(nc);
-            if (id is null) continue;
-            var ptLocal = _canvas.TranslatePoint(canvasPt, nc) ?? canvasPt;
-            if (new Rect(nc.Bounds.Size).Contains(ptLocal))
-                return (nc, id);
+            // Read the attached ZIndex value directly (avoid calling a missing static helper)
+            var za = a.View.GetValue(Panel.ZIndexProperty);
+            var zb = b.View.GetValue(Panel.ZIndexProperty);
+            int iza = za is int ia ? ia : 0;
+            int izb = zb is int ib ? ib : 0;
+            if (iza != izb) 
+                return izb.CompareTo(iza); // higher ZIndex first
+
+            // fallback: whichever appears later in the canvas children is on top
+            int iaIndex = _canvas.Children.IndexOf(a.View);
+            int ibIndex = _canvas.Children.IndexOf(b.View);
+            return 
+                ibIndex.CompareTo(iaIndex);
+        });
+
+        foreach (var item in ordered)
+        {
+            var nc = item.View;
+            if (nc is null) 
+                continue;
+
+            // Use the control's own hit test (translates point from canvas)
+            if (nc.Hit(canvasPt, _canvas))
+                return (nc, item.Id);
         }
+
         return null;
     }
 

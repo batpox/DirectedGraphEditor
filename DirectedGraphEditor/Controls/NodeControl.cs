@@ -43,27 +43,28 @@ public sealed class NodeControl : GraphElementControl
 
         var r = new Rect(Bounds.Size);
         var rr = new RoundedRect(r, CornerRadius);
-        ////var radius = new CornerRadius(CornerRadius);
 
-        // Fill + border based on selection
-        var fill = IsSelected ? Brushes.Linen : Brushes.WhiteSmoke;
+        // Use darker fills for dark app backgrounds and light text for contrast
+        var fill = IsSelected ? Brushes.DodgerBlue : Brushes.DarkGray; // dark gray
         var border = new Pen(IsSelected ? Brushes.DodgerBlue : Brushes.Gray, IsSelected ? 2 : 1);
+
 
         // Body
         var headerBrush = IsSelected ? Brushes.AliceBlue : Brushes.Gainsboro;
-        ctx.DrawRectangle(headerBrush, null, rr);
+        ctx.DrawRectangle(fill, border, rr);
 
         // Header strip (optional)
         if (!string.IsNullOrWhiteSpace(Title))
         {
             var headerRect = new Rect(0, 0, r.Width, Math.Min(HeaderHeight, r.Height));
+            var headerFill = IsSelected ? Brushes.MidnightBlue : Brushes.DarkSlateGray;
             ctx.DrawRectangle(IsSelected ? Brushes.AliceBlue : Brushes.Gainsboro, null, headerRect);
 
             var layout = new TextLayout(
                 text: Title!,
                 typeface: Typeface.Default,
                 fontSize: 12,
-                foreground: Brushes.Black,
+                foreground: Brushes.White,
                 textAlignment: TextAlignment.Left,
                 textWrapping: TextWrapping.NoWrap,
                 maxWidth: headerRect.Width);
