@@ -69,18 +69,12 @@ public static class UndoCommands
 
         public AddEdgeCommand(GraphController controller, GraphNode sNode, NodePin sPin, GraphNode tNode, NodePin tPin)
         {
-            if (this.controller == null)
-                return;
-
             this.controller = this.controller ?? throw new ArgumentNullException(nameof(AddEdgeCommand.controller));
             sN = sNode.Id; sP = sPin.Id; tN = tNode.Id; tP = tPin.Id;
         }
 
         public AddEdgeCommand(GraphController controller, string sNode, string sPin, string tNode, string tPin)
         {
-            if (this.controller == null)
-                return;
-
             this.controller = this.controller ?? throw new ArgumentNullException(nameof(AddEdgeCommand.controller));
             sN = sNode; sP = sPin; tN = tNode; tP = tPin;
         }

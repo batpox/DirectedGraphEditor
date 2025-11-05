@@ -228,12 +228,15 @@ public partial class EditorPageView : UserControl
             ? new Size(width: s.Width, height: s.Height)
             : new Size(width: 140, height: 60);
 
+        var title = string.IsNullOrWhiteSpace(node.Name) ? node.Id : node.Name;
+
         if (_ec.NodeViews.TryGetValue(node.Id, out var view))
         {
             Avalonia.Controls.Canvas.SetLeft(view, node.Position.X);
             Avalonia.Controls.Canvas.SetTop(view, node.Position.Y);
             view.Width = size.Width;
             view.Height = size.Height;
+            view.Title = title;
             view.InvalidateVisual();
         }
         else
@@ -243,6 +246,7 @@ public partial class EditorPageView : UserControl
                 x: node.Position.X,
                 y: node.Position.Y,
                 size: size,
+                title: title,
                 dataContext: node);
         }
     }

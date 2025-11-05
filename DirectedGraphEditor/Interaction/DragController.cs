@@ -2,6 +2,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using AvaloniaEdit.Utils;
 using DirectedGraphCore.Commands;        // CommandStack, CompositeCommand, RemoveEdgeCommand, AddEdgeCommand, InsertPinCommand
 using DirectedGraphCore.Geometry;
 using DirectedGraphCore.Models;          // GraphNode, GraphEdge
@@ -84,7 +85,32 @@ public sealed class DragController : IDragController
         var pos = e.GetPosition(relativeTo: canvas); // canvas space
         e.Handled = false;
 
-        // 1) Prefer grabbing an edge endpoint
+        // 1) Try node press
+        var nt = _ec.HitTester.NodeUnderPoint(canvasPt: pos);
+        if (nt is { } nodeHit)
+        {
+            var view = nodeHit.View;
+            var topLeft = new Point(x: Canvas.GetLeft(view), y: Canvas.GetTop(view));
+            _dragKind = DragKind.Node;
+            _nodeDrag = new NodeDrag
+            {
+                NodeId = nodeHit.NodeId,
+                PressCanvas = pos,
+                NodeOriginCanvas = topLeft,
+                PressOffset = pos - topLeft
+            };
+
+            // Optionally: mark selection here, or let clicks elsewhere do it
+            view.IsSelected = true;
+            view.InvalidateVisual();
+            canvas.CapturePointer(e.Pointer);
+
+            e.Handled = true;
+            return;
+        }
+
+
+        // 2) If no node hit fall back to edge endpoint
         var ep = _ec.HitTester.EdgeEndpointUnderPoint(canvasPt: pos, hitRadius: EndpointHitRadius);
         if (ep is { } endpointHit)
         {
@@ -106,40 +132,17 @@ public sealed class DragController : IDragController
             return;
         }
 
-        // 1.5) Check for edge *segment* hit (middle of edge). If clicked near a segment, prefer edge selection
+        // 3) Check for edge *segment* hit (middle of edge). If clicked near a segment, prefer edge selection
         var seg = FindTopmostEdgeUnderPoint(pos, EdgeHitDistance);
         if (seg is { } segHit)
         {
             // select the edge visually and do not fall through to node selection
-            _ec.Adapter.SetSelected(nodeId: null, edgeId: segHit.EdgeId, selected: true);
+            _ec.Adapter?.SetSelected(nodeId: null, edgeId: segHit.EdgeId, selected: true);
             e.Handled = true;
             return;
         }
 
-        // 2) Otherwise, try node press
-        var nt = _ec.HitTester.NodeUnderPoint(canvasPt: pos);
-        if (nt is { } nodeHit)
-        {
-            var view = nodeHit.View;
-            var topLeft = new Point(x: Canvas.GetLeft(view), y: Canvas.GetTop(view));
-            _dragKind = DragKind.Node;
-            _nodeDrag = new NodeDrag
-            {
-                NodeId = nodeHit.NodeId,
-                PressCanvas = pos,
-                NodeOriginCanvas = topLeft,
-                PressOffset = pos - topLeft
-            };
-
-            // Optionally: mark selection here, or let clicks elsewhere do it
-            view.IsSelected = true;
-            view.InvalidateVisual();
-
-            e.Handled = true;
-            return;
-        }
-
-        // 3) Clicked empty space: clear selection if you want (optional)
+        // 4) Clicked empty space: clear selection if you want (optional)
         e.Handled = false;
     }
 
@@ -208,8 +211,8 @@ public sealed class DragController : IDragController
                         {
                             if (edge.SourceNodeId == _nodeDrag.NodeId || edge.TargetNodeId == _nodeDrag.NodeId)
                             {
-                                var p0 = ResolvePinCanvasPoint(edge.SourceNodeId, defaultSide: +1); // source → right
-                                var p1 = ResolvePinCanvasPoint(edge.TargetNodeId, defaultSide: -1); // target → left
+                                var p0 = _ec.Adapter?.ResolvePinCanvasPoint(_ec, edge.SourceNodeId, defaultSide: +1); // source → right
+                                var p1 = _ec.Adapter?.ResolvePinCanvasPoint(_ec, edge.TargetNodeId, defaultSide: -1); // target → left
                                 _ec.Adapter.UpdateEdgePoints(edge.Id, p0, p1);
                             }
                         }
@@ -226,30 +229,6 @@ public sealed class DragController : IDragController
                     break;
                 }
         }
-    }
-    // Helper: mirror the same anchor calculation used elsewhere (fallback-safe)
-    private Point ResolvePinCanvasPoint(string nodeId, int defaultSide)
-    {
-        if (_ec is null) return new Point(0, 0);
-        if (!_ec.NodeViews.TryGetValue(nodeId, out var nodeView)) 
-            return new Point(0, 0);
-
-        var left = Canvas.GetLeft(nodeView);
-        if (double.IsNaN(left)) left = 0;
-        var top = Canvas.GetTop(nodeView);
-        if (double.IsNaN(top)) top = 0;
-
-        var width = nodeView.Bounds.Width;
-        if (double.IsNaN(width) || width <= 0) width = nodeView.Width;
-        var height = nodeView.Bounds.Height;
-        if (double.IsNaN(height) || height <= 0) height = nodeView.Height;
-
-        if (width <= 0) width = 140;
-        if (height <= 0) height = 60;
-
-        var px = defaultSide > 0 ? left + width : left;
-        var py = top + height / 2;
-        return new Point(px, py);
     }
 
     public void HandleCanvasPointerReleased(PointerReleasedEventArgs e)

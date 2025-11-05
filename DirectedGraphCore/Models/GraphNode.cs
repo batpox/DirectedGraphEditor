@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.Drawing;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using DirectedGraphCore.Geometry;
@@ -28,6 +29,16 @@ public class GraphNode : ObservableObject
     }
 
     public Size3? Size { get; set; }
+
+    public RectangleF? BoundingRect { get {
+
+            return new RectangleF(
+                Position.X,
+                Position.Y,
+                Size?.Width ?? 0,
+                Size?.Height ?? 0); 
+        }
+        }
 
     /// <summary>Pins rendered on the left (incoming).</summary>
     public ObservableCollection<NodePin> Inputs { get; } = new();

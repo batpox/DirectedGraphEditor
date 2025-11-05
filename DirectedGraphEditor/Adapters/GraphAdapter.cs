@@ -125,56 +125,69 @@ public sealed class GraphAdapter : IHitTester, IPinResolver, IRubberHost
             _canvas.Children.Remove(ec);
     }
 
-    public void UpdateEdgePoints(string edgeId, Point p0, Point p1)
+    public void UpdateEdgePoints(string edgeId, Point? p0, Point? p1)
     {
         if (EdgeViews.TryGetValue(edgeId, out var ec))
         {
-            ec.SourcePoint = p0;
-            ec.TargetPoint = p1;
+            ec.SourcePoint = p0.Value;
+            ec.TargetPoint = p1.Value;
             ec.InvalidateVisual();
         }
     }
 
+    /// <summary>
+    /// Find selected object in the order of nodes first, then edge endpoints, and then edges.
+    /// </summary>
     public void SetSelected(string? nodeId = null, string? edgeId = null, bool selected = false)
     {
-        if (nodeId != null && NodeViews.TryGetValue(nodeId, out var nv)) { nv.IsSelected = selected; nv.InvalidateVisual(); }
-        if (edgeId != null && EdgeViews.TryGetValue(edgeId, out var ev)) { ev.IsSelected = selected; ev.InvalidateVisual(); }
+        // Clear-all request
+        if (nodeId is null && edgeId is null && selected == false)
+        {
+            foreach (var nv in NodeViews.Values) { nv.IsSelected = false; nv.InvalidateVisual(); }
+            foreach (var ev in EdgeViews.Values) { ev.IsSelected = false; ev.InvalidateVisual(); }
+            return;
+        }
+
+        if (nodeId != null)  
+        {
+            foreach (var kv in NodeViews)
+            {
+                var isSel = kv.Key == nodeId && selected;
+                kv.Value.IsSelected = isSel;
+                kv.Value.InvalidateVisual();
+            }
+            // Clear edges when node selected
+            if (selected)
+            {
+                foreach (var ev in EdgeViews.Values) { ev.IsSelected = false; ev.InvalidateVisual(); }
+            }
+            return;
+        }
+        if (edgeId != null) 
+        {
+            foreach (var kv in EdgeViews)
+            {
+                var isSel = kv.Key == edgeId && selected;
+                kv.Value.IsSelected = isSel;
+                kv.Value.InvalidateVisual();
+            }
+            // Clear nodes when edge selected
+            if (selected)
+            {
+                foreach (var nv in NodeViews.Values) { nv.IsSelected = false; nv.InvalidateVisual(); }
+            }
+            return;
+        }
     }
 
     // ----- Event forwarding to DragController (single place for pointer logic)
     public void WireCanvasToDragController(IDragController drag)
     {
-        ////_canvas.AddHandler(InputElement.PointerPressedEvent, (s, e) => { _canvas.CapturePointer(e.Pointer); drag.HandleCanvasPointerPressed(e); }, RoutingStrategies.Tunnel | RoutingStrategies.Bubble);
-        ////_canvas.AddHandler(InputElement.PointerMovedEvent, (s, e) => { drag.HandleCanvasPointerMoved(e); }, RoutingStrategies.Tunnel | RoutingStrategies.Bubble);
-        ////_canvas.AddHandler(InputElement.PointerReleasedEvent, (s, e) => { drag.HandleCanvasPointerReleased(e); _canvas.ReleasePointerCapture(e.Pointer); }, RoutingStrategies.Tunnel | RoutingStrategies.Bubble);
-        ///
         _canvas.PointerPressed += (s, e) => drag.HandleCanvasPointerPressed(e);
         _canvas.PointerMoved += (s, e) => drag.HandleCanvasPointerMoved(e);
         _canvas.PointerReleased += (s, e) => drag.HandleCanvasPointerReleased(e);
     }
 
-    // ----- IHitTester (uses the owned visuals so results match what’s on screen)
-    ////public (NodeControl View, string NodeId)? NodeUnderPoint(Point canvasPt)
-    ////{
-    ////    // Iterate in reverse z-order so “topmost” wins
-    ////    for (int ii = _canvas.Children.Count - 1; ii >= 0; ii--)
-    ////    {
-    ////        if (_canvas.Children[ii] is not NodeControl nc)
-    ////            continue;
-    ////        var id = FindNodeIdByView(nc);
-    ////        if (id is null) 
-    ////            continue;
-
-    ////        // Use the control's own hit-test which respects rounded rect / visual shape
-    ////        if (nc.Hit(canvasPt, _canvas))
-    ////            return (nc, id);
-
-    ////        ////var ptLocal = _canvas.TranslatePoint(canvasPt, nc) ?? canvasPt;
-    ////        ////if (new Rect(nc.Bounds.Size).Contains(ptLocal))
-    ////        ////    return (nc, id);
-    ////    }
-    ////    return null;
-    ////}
     public (NodeControl View, string NodeId)? NodeUnderPoint(Point canvasPt)
     {
         // Iterate NodeViews in visual top-to-bottom order:
@@ -224,6 +237,32 @@ public sealed class GraphAdapter : IHitTester, IPinResolver, IRubberHost
         }
         return null;
     }
+
+    // Helper: mirror the same anchor calculation used elsewhere (fallback-safe)
+    internal Point ResolvePinCanvasPoint(EditorContext ec, string nodeId, int defaultSide)
+    {
+        if (ec is null) return new Point(0, 0);
+        if (!ec.NodeViews.TryGetValue(nodeId, out var nodeView))
+            return new Point(0, 0);
+
+        var left = Canvas.GetLeft(nodeView);
+        if (double.IsNaN(left)) left = 0;
+        var top = Canvas.GetTop(nodeView);
+        if (double.IsNaN(top)) top = 0;
+
+        var width = nodeView.Bounds.Width;
+        if (double.IsNaN(width) || width <= 0) width = nodeView.Width;
+        var height = nodeView.Bounds.Height;
+        if (double.IsNaN(height) || height <= 0) height = nodeView.Height;
+
+        if (width <= 0) width = 140;
+        if (height <= 0) height = 60;
+
+        var px = defaultSide > 0 ? left + width : left;
+        var py = top + height / 2;
+        return new Point(px, py);
+    }
+
 
     // ----- IPinResolver (stub to be connected to your real logic)
     public (string PinId, object? InsertPinCommand) ResolveForDrop(string nodeId, EnumNodePinDirection dir, double dropYNodeSpace)
