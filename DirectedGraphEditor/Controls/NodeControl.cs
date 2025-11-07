@@ -21,7 +21,7 @@ public sealed class NodeControl : GraphElementControl
         AvaloniaProperty.Register<NodeControl, double>(nameof(HeaderHeight), 15);
 
     public static readonly StyledProperty<double> PinRadiusProperty =
-        AvaloniaProperty.Register<NodeControl, double>(nameof(PinRadius), 8);
+        AvaloniaProperty.Register<NodeControl, double>(nameof(PinRadius), 6);
 
     public string? Title { get => GetValue(TitleProperty); set => SetValue(TitleProperty, value); }
     public double CornerRadius { get => GetValue(CornerRadiusProperty); set => SetValue(CornerRadiusProperty, value); }

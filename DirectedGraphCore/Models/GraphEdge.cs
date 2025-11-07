@@ -1,4 +1,7 @@
 ﻿
+namespace DirectedGraphCore.Models;
+
+
 public sealed class GraphEdge
 {
     public string Id { get; init; } = Guid.NewGuid().ToString("N");
